@@ -1055,6 +1055,7 @@ useEffect(() => {
                   </div>
                   {activeMembers.map(member => {
                     const status = getMemberCurrentStatus(member);
+                    const activeStatusTag = member.attendance_tag ?? getMemberStatusTag(status?.label);
                     return (
                       <div key={member.id} className="active-members-schedule-row" role="row">
                         <div className="active-members-owner" role="cell">{member.fullname}</div>
@@ -1087,7 +1088,7 @@ useEffect(() => {
                                 {statusTags.map(tag => (
                                   <span
                                     key={`${member.id}-${tag}`}
-                                    className={`member-status-tag ${getMemberStatusTag(status.label) === tag ? "is-active" : ""}`}
+                                    className={`member-status-tag ${activeStatusTag === tag ? "is-active" : ""}`}
                                   >
                                     {tag}
                                   </span>
