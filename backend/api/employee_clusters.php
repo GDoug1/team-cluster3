@@ -5,15 +5,23 @@ requireRole("employee");
 
 $res = $conn->query(
     "SELECT
+        c.id cluster_id,
         c.name cluster_name,
         u.fullname coach_name,
-        s.schedule
+        s.schedule,
+        al.time_in_at,
+        al.time_out_at,
+        al.tag attendance_tag,
+        al.note attendance_note
      FROM cluster_members cm
      JOIN clusters c ON cm.cluster_id=c.id
      JOIN users u ON c.coach_id=u.id
      LEFT JOIN schedules s
         ON s.cluster_id=c.id
         AND s.employee_id=cm.employee_id
+     LEFT JOIN attendance_logs al
+        ON al.cluster_id=c.id
+        AND al.employee_id=cm.employee_id
      WHERE cm.employee_id={$_SESSION['user']['id']}
      AND c.status='active'"
 );

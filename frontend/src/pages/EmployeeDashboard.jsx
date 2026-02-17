@@ -190,12 +190,37 @@ export default function EmployeeDashboard() {
     }).format(date);
   };
 
-  const handleTemporaryTimeIn = () => {
+  const persistAttendance = async nextAttendance => {
+    if (!activeCluster?.cluster_id) {
+      setAttendanceLog(nextAttendance);
+      return;
+    }
+
+    const response = await apiFetch("api/save_attendance.php", {
+      method: "POST",
+      body: JSON.stringify({
+        cluster_id: activeCluster.cluster_id,
+        ...nextAttendance,
+        timeInAt: nextAttendance.timeInAt ? nextAttendance.timeInAt.toISOString() : null,
+        timeOutAt: nextAttendance.timeOutAt ? nextAttendance.timeOutAt.toISOString() : null
+      })
+    });
+
+    const savedAttendance = response.attendance ?? {};
+    setAttendanceLog({
+      timeInAt: savedAttendance.timeInAt ? new Date(savedAttendance.timeInAt) : null,
+      timeOutAt: savedAttendance.timeOutAt ? new Date(savedAttendance.timeOutAt) : null,
+      tag: savedAttendance.tag ?? null,
+      note: savedAttendance.note ?? ""
+    });
+  };
+
+  const handleTimeIn = async () => {
     const now = new Date();
     const daySchedule = getTodaySchedule();
 
     if (!daySchedule) {
-      setAttendanceLog({
+      await persistAttendance({
         timeInAt: now,
         timeOutAt: null,
         tag: "Late",
@@ -206,7 +231,7 @@ export default function EmployeeDashboard() {
 
     const scheduledStartMinutes = toMinutes(daySchedule.startTime, daySchedule.startPeriod);
     if (scheduledStartMinutes === null) {
-      setAttendanceLog({
+      await persistAttendance({
         timeInAt: now,
         timeOutAt: null,
         tag: "Late",
@@ -219,7 +244,7 @@ export default function EmployeeDashboard() {
     const lateThreshold = scheduledStartMinutes + 15;
     const tag = nowMinutes <= lateThreshold ? "On Time" : "Late";
 
-    setAttendanceLog({
+   await persistAttendance({
       timeInAt: now,
       timeOutAt: null,
       tag,
@@ -227,12 +252,13 @@ export default function EmployeeDashboard() {
     });
   };
 
-  const handleTemporaryTimeOut = () => {
-    setAttendanceLog(current => ({
-      ...current,
+  const handleTimeOut = async () => {
+    const nextAttendance = {
+      ...attendanceLog,
       timeOutAt: new Date(),
-      note: current.timeInAt ? current.note : "Please time in before timing out."
-    }));
+      note: attendanceLog.timeInAt ? attendanceLog.note : "Please time in before timing out."
+    };
+    await persistAttendance(nextAttendance);
   };
 
   const getStatusTag = statusLabel => {
@@ -258,6 +284,7 @@ export default function EmployeeDashboard() {
   const scheduleDays = getActiveDays(activeCluster?.schedule);
   const dayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   const currentStatus = getCurrentStatus();
+  const activeAttendanceTag = attendanceLog.tag ?? getStatusTag(currentStatus.label);
 
   useEffect(() => {
     apiFetch("api/employee_clusters.php").then(response => {
@@ -266,6 +293,15 @@ export default function EmployeeDashboard() {
         schedule: normalizeSchedule(cluster.schedule)
       }));
       setData(normalized);
+      const active = normalized[0];
+      if (active) {
+        setAttendanceLog({
+          timeInAt: active.time_in_at ? new Date(active.time_in_at) : null,
+          timeOutAt: active.time_out_at ? new Date(active.time_out_at) : null,
+          tag: active.attendance_tag ?? null,
+          note: active.attendance_note ?? ""
+        });
+      }
     });
   }, []);
 
@@ -314,7 +350,7 @@ export default function EmployeeDashboard() {
           <div>
             <h2>{activeNav.toUpperCase()}</h2>
             <div className="section-title">
-              {activeNav === "Dashboard" ? "Temporary employee time tracking" : "My team cluster overview"}
+              {activeNav === "Dashboard" ? "Employee time tracking" : "My team cluster overview"}
             </div>
           </div>
           <span className="datetime">{dateTimeLabel}</span>
@@ -324,18 +360,17 @@ export default function EmployeeDashboard() {
           {activeNav === "Dashboard" && (
             <div className="employee-card employee-attendance-card">
               <div className="employee-card-header">
-                <div className="employee-card-title">Temporary Time In / Time Out</div>
+                <div className="employee-card-title">Time In / Time Out</div>
               </div>
               <div className="employee-card-body employee-attendance-body">
                 <p className="employee-attendance-copy">
-                  This temporary control marks your status as <strong>On Time</strong> when you time in on schedule or within 15 minutes after start time.
-                  After that, the tag becomes <strong>Late</strong>.
+                  This control marks your status as <strong>On Time</strong> when you time in on schedule or within 15 minutes after start time.
                 </p>
                 <div className="employee-attendance-actions">
-                  <button type="button" className="btn primary" onClick={handleTemporaryTimeIn}>
+                  <button type="button" className="btn primary" onClick={handleTimeIn}>
                     Time In
                   </button>
-                  <button type="button" className="btn secondary" onClick={handleTemporaryTimeOut}>
+                  <button type="button" className="btn secondary" onClick={handleTimeOut}>
                     Time Out
                   </button>
                 </div>
@@ -392,6 +427,14 @@ export default function EmployeeDashboard() {
                     </div>
                   </div>
                 </div>
+                <div className="employee-field employee-highlight-field">
+                      <div className="employee-field-label">Latest Attendance Tag</div>
+                      <div className="employee-field-value">
+                        <span className={`member-status-tag ${activeAttendanceTag ? "is-active" : ""}`}>
+                          {activeAttendanceTag ?? "Pending"}
+                        </span>
+                      </div>
+                    </div>
                 <div className="employee-card-footer">
                 </div>
               </div>
@@ -441,7 +484,7 @@ export default function EmployeeDashboard() {
                           {statusTags.map(tag => (
                             <span
                               key={`employee-${tag}`}
-                              className={`member-status-tag ${getStatusTag(currentStatus.label) === tag ? "is-active" : ""}`}
+                              className={`member-status-tag ${activeAttendanceTag === tag ? "is-active" : ""}`}
                             >
                               {tag}
                             </span>

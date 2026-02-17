@@ -53,3 +53,22 @@ CREATE TABLE IF NOT EXISTS schedules (
     FOREIGN KEY (employee_id) REFERENCES users(id)
     ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS attendance_logs (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  cluster_id INT NOT NULL,
+  employee_id INT NOT NULL,
+  time_in_at DATETIME NULL,
+  time_out_at DATETIME NULL,
+  tag ENUM('On Time', 'Late', 'Break Time', 'Lunch Time') DEFAULT NULL,
+  note TEXT,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uniq_attendance_cluster_employee (cluster_id, employee_id),
+  CONSTRAINT fk_attendance_cluster
+    FOREIGN KEY (cluster_id) REFERENCES clusters(id)
+    ON DELETE CASCADE,
+  CONSTRAINT fk_attendance_employee
+    FOREIGN KEY (employee_id) REFERENCES users(id)
+    ON DELETE CASCADE
+);
