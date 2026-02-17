@@ -11,6 +11,8 @@ const formatDateTime = value => {
   return date.toLocaleString();
 };
 
+const formatMonthTitle = monthLabel => monthLabel || "Unknown month";
+
 const formatSchedule = schedule => {
   if (!schedule) return "No schedule configured yet.";
 
@@ -211,7 +213,7 @@ export default function CoachAttendancePage() {
                   ))}
                 </div>
               )}
-              
+
               {selectedMember && (
                 <div className="modal-overlay" role="presentation" onClick={() => setSelectedMember(null)}>
                   <section className="modal-card attendance-modal" role="dialog" aria-modal="true" onClick={event => event.stopPropagation()}>
@@ -240,6 +242,30 @@ export default function CoachAttendancePage() {
                       <div className="attendance-detail-item attendance-detail-note">
                         <span className="attendance-detail-label">Coach Note</span>
                         <span className="attendance-detail-value">{selectedMember.attendance_note || "No note provided."}</span>
+                      </div>
+                      <div className="attendance-detail-item attendance-detail-note">
+                        <span className="attendance-detail-label">Attendance History</span>
+                        {Array.isArray(selectedMember.attendance_history) && selectedMember.attendance_history.length > 0 ? (
+                          <div className="attendance-history-list">
+                            {selectedMember.attendance_history.map(monthHistory => (
+                              <div key={monthHistory.month} className="attendance-history-month">
+                                <div className="attendance-history-month-title">{formatMonthTitle(monthHistory.month)}</div>
+                                <div className="attendance-history-entries">
+                                  {monthHistory.entries.map((entry, index) => (
+                                    <div key={`${monthHistory.month}-${entry.time_in_at ?? index}`} className="attendance-history-entry">
+                                      <div><strong>Clock In:</strong> {formatDateTime(entry.time_in_at)}</div>
+                                      <div><strong>Clock Out:</strong> {formatDateTime(entry.time_out_at)}</div>
+                                      <div><strong>Status:</strong> {entry.tag ?? "Pending"}</div>
+                                      <div><strong>Note:</strong> {entry.note || "—"}</div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="attendance-detail-value">No attendance history yet.</span>
+                        )}
                       </div>
                       <div className="attendance-detail-item attendance-detail-note">
                         <span className="attendance-detail-label">Weekly Schedule</span>

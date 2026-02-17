@@ -26,25 +26,36 @@ $timeOutValue = $timeOutSql ? "'" . $conn->real_escape_string($timeOutSql) . "'"
 $tagValue = $tag ? "'" . $conn->real_escape_string($tag) . "'" : "NULL";
 $noteValue = "'" . $conn->real_escape_string($note) . "'";
 
-$exists = $conn->query(
-    "SELECT id FROM attendance_logs
-     WHERE cluster_id=$cluster_id AND employee_id=$employee_id"
-);
-
-if ($exists && $exists->num_rows > 0) {
-    $conn->query(
-        "UPDATE attendance_logs
-         SET time_in_at=$timeInValue,
-             time_out_at=$timeOutValue,
-             tag=$tagValue,
-             note=$noteValue
+if ($timeOutSql) {
+    $lookup = $conn->query(
+        "SELECT id FROM attendance_logs
          WHERE cluster_id=$cluster_id
-           AND employee_id=$employee_id"
+           AND employee_id=$employee_id
+           AND time_out_at IS NULL
+         ORDER BY COALESCE(time_in_at, updated_at) DESC, id DESC
+         LIMIT 1"
     );
+
+    if ($lookup && $lookup->num_rows > 0) {
+        $row = $lookup->fetch_assoc();
+        $attendanceId = (int)$row["id"];
+        $conn->query(
+            "UPDATE attendance_logs
+             SET time_out_at=$timeOutValue,
+                 tag=$tagValue,
+                 note=$noteValue
+             WHERE id=$attendanceId"
+        );
+    } else {
+        $conn->query(
+            "INSERT INTO attendance_logs (cluster_id, employee_id, time_in_at, time_out_at, tag, note)
+             VALUES ($cluster_id, $employee_id, $timeInValue, $timeOutValue, $tagValue, $noteValue)"
+        );
+    }
 } else {
     $conn->query(
         "INSERT INTO attendance_logs (cluster_id, employee_id, time_in_at, time_out_at, tag, note)
-         VALUES ($cluster_id, $employee_id, $timeInValue, $timeOutValue, $tagValue, $noteValue)"
+         VALUES ($cluster_id, $employee_id, $timeInValue, NULL, $tagValue, $noteValue)"
     );
 }
 

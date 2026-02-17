@@ -64,7 +64,6 @@ CREATE TABLE IF NOT EXISTS attendance_logs (
   note TEXT,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     ON UPDATE CURRENT_TIMESTAMP,
-  UNIQUE KEY uniq_attendance_cluster_employee (cluster_id, employee_id),
   CONSTRAINT fk_attendance_cluster
     FOREIGN KEY (cluster_id) REFERENCES clusters(id)
     ON DELETE CASCADE,

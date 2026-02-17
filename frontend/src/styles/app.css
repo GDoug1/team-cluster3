@@ -1460,6 +1460,44 @@ body {
   color: #1e293b;
 }
 
+.attendance-history-list {
+  display: grid;
+  gap: 10px;
+}
+
+.attendance-history-month {
+  border: 1px solid #dbe2ea;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.attendance-history-month-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #334155;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.attendance-history-entries {
+  display: grid;
+  gap: 8px;
+}
+
+.attendance-history-entry {
+  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 8px;
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+  color: #1e293b;
+}
+
 @media (max-width: 720px) {
   .attendance-controls {
     justify-content: stretch;
