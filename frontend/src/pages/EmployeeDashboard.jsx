@@ -185,9 +185,33 @@ export default function EmployeeDashboard() {
     if (!date) return "—";
     return new Intl.DateTimeFormat("en-US", {
       hour: "numeric",
-      minute: "2-digit",
-      second: "2-digit"
+      minute: "2-digit"
     }).format(date);
+  };
+
+  const toLocalSqlDateTime = date => {
+    const year = date.getFullYear();
+    const month = `${date.getMonth() + 1}`.padStart(2, "0");
+    const day = `${date.getDate()}`.padStart(2, "0");
+    const hours = `${date.getHours()}`.padStart(2, "0");
+    const minutes = `${date.getMinutes()}`.padStart(2, "0");
+    const seconds = `${date.getSeconds()}`.padStart(2, "0");
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+  };
+
+  const parseSqlDateTime = value => {
+    if (!value || typeof value !== "string") return null;
+    const [datePart, timePart] = value.trim().split(" ");
+    if (!datePart || !timePart) return new Date(value);
+
+    const [year, month, day] = datePart.split("-").map(Number);
+    const [hours, minutes, seconds] = timePart.split(":").map(Number);
+
+    if ([year, month, day, hours, minutes].some(Number.isNaN)) {
+      return new Date(value);
+    }
+
+    return new Date(year, month - 1, day, hours, minutes, Number.isNaN(seconds) ? 0 : seconds);
   };
 
   const persistAttendance = async nextAttendance => {
@@ -201,15 +225,15 @@ export default function EmployeeDashboard() {
       body: JSON.stringify({
         cluster_id: activeCluster.cluster_id,
         ...nextAttendance,
-        timeInAt: nextAttendance.timeInAt ? nextAttendance.timeInAt.toISOString() : null,
-        timeOutAt: nextAttendance.timeOutAt ? nextAttendance.timeOutAt.toISOString() : null
+        timeInAt: nextAttendance.timeInAt ? toLocalSqlDateTime(nextAttendance.timeInAt) : null,
+        timeOutAt: nextAttendance.timeOutAt ? toLocalSqlDateTime(nextAttendance.timeOutAt) : null
       })
     });
 
     const savedAttendance = response.attendance ?? {};
     setAttendanceLog({
-      timeInAt: savedAttendance.timeInAt ? new Date(savedAttendance.timeInAt) : null,
-      timeOutAt: savedAttendance.timeOutAt ? new Date(savedAttendance.timeOutAt) : null,
+      timeInAt: parseSqlDateTime(savedAttendance.timeInAt),
+      timeOutAt: parseSqlDateTime(savedAttendance.timeOutAt),
       tag: savedAttendance.tag ?? null,
       note: savedAttendance.note ?? ""
     });
@@ -315,8 +339,8 @@ export default function EmployeeDashboard() {
       const active = normalized[0];
       if (active) {
         setAttendanceLog({
-          timeInAt: active.time_in_at ? new Date(active.time_in_at) : null,
-          timeOutAt: active.time_out_at ? new Date(active.time_out_at) : null,
+          timeInAt: parseSqlDateTime(active.time_in_at),
+          timeOutAt: parseSqlDateTime(active.time_out_at),
           tag: active.attendance_tag ?? null,
           note: active.attendance_note ?? ""
         });
