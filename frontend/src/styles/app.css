@@ -1381,3 +1381,96 @@ body {
 .attendance-table .table-cell {
   word-break: break-word;
 }
+.attendance-controls {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 14px;
+}
+
+.attendance-search {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  color: #334155;
+}
+
+.attendance-search input {
+  width: min(360px, 76vw);
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 13px;
+  background: #f8fafc;
+}
+
+.attendance-header,
+.attendance-row-button {
+  grid-template-columns: 1.1fr 1fr 1fr 0.7fr 1.2fr;
+}
+
+.attendance-row-button {
+  width: 100%;
+  border: 0;
+  background: #ffffff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.attendance-row-button:hover {
+  background: #f8fafc;
+}
+
+.attendance-name {
+  font-weight: 600;
+  color: #1d4ed8;
+}
+
+.attendance-modal {
+  width: min(640px, 94vw);
+}
+
+.attendance-modal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.attendance-detail-item {
+  border: 1px solid #dbe2ea;
+  border-radius: 10px;
+  background: #f8fafc;
+  padding: 12px;
+  display: grid;
+  gap: 6px;
+}
+
+.attendance-detail-note {
+  grid-column: 1 / -1;
+}
+
+.attendance-detail-label {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.attendance-detail-value {
+  font-size: 14px;
+  color: #1e293b;
+}
+
+@media (max-width: 720px) {
+  .attendance-controls {
+    justify-content: stretch;
+  }
+
+  .attendance-search,
+  .attendance-search input {
+    width: 100%;
+  }
+
+  .attendance-modal-grid {
+    grid-template-columns: 1fr;
+  }
+}

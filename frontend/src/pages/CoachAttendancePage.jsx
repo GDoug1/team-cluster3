@@ -11,6 +11,18 @@ const formatDateTime = value => {
   return date.toLocaleString();
 };
 
+const formatSchedule = schedule => {
+  if (!schedule) return "No schedule configured yet.";
+
+  try {
+    const parsed = JSON.parse(schedule);
+    if (!Array.isArray(parsed) || parsed.length === 0) return "No schedule configured yet.";
+    return parsed.join(", ");
+  } catch {
+    return schedule;
+  }
+};
+
 export default function CoachAttendancePage() {
   const navigate = useNavigate();
   const { user } = useCurrentUser();
@@ -18,6 +30,8 @@ export default function CoachAttendancePage() {
 
   const [activeCluster, setActiveCluster] = useState(null);
   const [attendanceRows, setAttendanceRows] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedMember, setSelectedMember] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -59,6 +73,17 @@ export default function CoachAttendancePage() {
       ignore = true;
     };
   }, []);
+
+  const filteredAttendanceRows = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return attendanceRows;
+
+    return attendanceRows.filter(member => {
+      const name = member.fullname?.toLowerCase() ?? "";
+      const tag = member.attendance_tag?.toLowerCase() ?? "";
+      return name.includes(query) || tag.includes(query);
+    });
+  }, [attendanceRows, searchQuery]);
 
   const attendanceSummary = useMemo(() => {
     const total = attendanceRows.length;
@@ -140,28 +165,88 @@ export default function CoachAttendancePage() {
                 </div>
               </div>
 
+              <div className="attendance-controls">
+                <label className="attendance-search" htmlFor="attendance-search-input">
+                  <span>Search employee</span>
+                  <input
+                    id="attendance-search-input"
+                    type="search"
+                    placeholder="Search by name or attendance tag"
+                    value={searchQuery}
+                    onChange={event => setSearchQuery(event.target.value)}
+                  />
+                </label>
+              </div>
+
               {attendanceRows.length === 0 && (
                 <div className="empty-state">No employees assigned to the active cluster yet.</div>
               )}
 
-              {attendanceRows.length > 0 && (
+              {attendanceRows.length > 0 && filteredAttendanceRows.length === 0 && (
+                <div className="empty-state">No employees match your search.</div>
+              )}
+
+              {filteredAttendanceRows.length > 0 && (
                 <div className="table-card attendance-table">
-                  <div className="table-header">
+                  <div className="table-header attendance-header">
                     <div>Employee</div>
                     <div>Time In</div>
                     <div>Time Out</div>
                     <div>Tag</div>
                     <div>Note</div>
                   </div>
-                  {attendanceRows.map(member => (
-                    <div key={member.id} className="table-row">
-                      <div className="table-cell">{member.fullname}</div>
+                  {filteredAttendanceRows.map(member => (
+                    <button
+                      key={member.id}
+                      type="button"
+                      className="table-row attendance-row-button"
+                      onClick={() => setSelectedMember(member)}
+                    >
+                      <div className="table-cell attendance-name">{member.fullname}</div>
                       <div className="table-cell">{formatDateTime(member.time_in_at)}</div>
                       <div className="table-cell">{formatDateTime(member.time_out_at)}</div>
                       <div className="table-cell">{member.attendance_tag ?? "Pending"}</div>
                       <div className="table-cell muted">{member.attendance_note || "—"}</div>
-                    </div>
+                    </button>
                   ))}
+                </div>
+              )}
+              
+              {selectedMember && (
+                <div className="modal-overlay" role="presentation" onClick={() => setSelectedMember(null)}>
+                  <section className="modal-card attendance-modal" role="dialog" aria-modal="true" onClick={event => event.stopPropagation()}>
+                    <header className="modal-header">
+                      <div>
+                        <h3 className="modal-title">{selectedMember.fullname}</h3>
+                        <p className="modal-subtitle">Attendance details</p>
+                      </div>
+                      <button type="button" className="btn secondary" onClick={() => setSelectedMember(null)}>
+                        Close
+                      </button>
+                    </header>
+                    <div className="modal-body attendance-modal-grid">
+                      <div className="attendance-detail-item">
+                        <span className="attendance-detail-label">Clock In</span>
+                        <span className="attendance-detail-value">{formatDateTime(selectedMember.time_in_at)}</span>
+                      </div>
+                      <div className="attendance-detail-item">
+                        <span className="attendance-detail-label">Clock Out</span>
+                        <span className="attendance-detail-value">{formatDateTime(selectedMember.time_out_at)}</span>
+                      </div>
+                      <div className="attendance-detail-item">
+                        <span className="attendance-detail-label">Status</span>
+                        <span className="attendance-detail-value">{selectedMember.attendance_tag ?? "Pending"}</span>
+                      </div>
+                      <div className="attendance-detail-item attendance-detail-note">
+                        <span className="attendance-detail-label">Coach Note</span>
+                        <span className="attendance-detail-value">{selectedMember.attendance_note || "No note provided."}</span>
+                      </div>
+                      <div className="attendance-detail-item attendance-detail-note">
+                        <span className="attendance-detail-label">Weekly Schedule</span>
+                        <span className="attendance-detail-value">{formatSchedule(selectedMember.schedule)}</span>
+                      </div>
+                    </div>
+                  </section>
                 </div>
               )}
             </>
