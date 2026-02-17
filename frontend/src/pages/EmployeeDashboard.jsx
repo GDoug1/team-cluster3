@@ -5,7 +5,15 @@ import useCurrentUser from "../hooks/useCurrentUser";
 
 export default function EmployeeDashboard() {
   const statusTags = ["On Time", "Late", "Break Time", "Lunch Time"];
+  const navItems = ["Dashboard", "Team", "Attendance", "Schedule"];
   const [data, setData] = useState([]);
+  const [activeNav, setActiveNav] = useState("Team");
+  const [attendanceLog, setAttendanceLog] = useState({
+    timeInAt: null,
+    timeOutAt: null,
+    tag: null,
+    note: ""
+  });
   const activeCluster = data[0];
   const dateTimeLabel = useLiveDateTime();
   const { user } = useCurrentUser();
@@ -97,6 +105,19 @@ export default function EmployeeDashboard() {
     return normalizedHour * 60 + minute + periodOffset;
   };
 
+  const getTodaySchedule = () => {
+    const schedule = activeCluster?.schedule;
+    if (!schedule || typeof schedule !== "object" || Array.isArray(schedule)) {
+      return null;
+    }
+
+    const currentDay = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][new Date().getDay()];
+    const assignedDays = Array.isArray(schedule.days) ? schedule.days : [];
+    if (!assignedDays.includes(currentDay)) return null;
+
+    return schedule.daySchedules?.[currentDay] ?? null;
+  };
+
   const isTimeWithinRange = (nowMinutes, startTime, startPeriod, endTime, endPeriod) => {
     const startMinutes = toMinutes(startTime, startPeriod);
     const endMinutes = toMinutes(endTime, endPeriod);
@@ -113,18 +134,7 @@ export default function EmployeeDashboard() {
   };
 
   const getCurrentStatus = () => {
-    const schedule = activeCluster?.schedule;
-    if (!schedule || typeof schedule !== "object" || Array.isArray(schedule)) {
-      return { label: "Not available", className: "status-not-available" };
-    }
-
-    const currentDay = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][new Date().getDay()];
-    const assignedDays = Array.isArray(schedule.days) ? schedule.days : [];
-    if (!assignedDays.includes(currentDay)) {
-      return { label: "Not available", className: "status-not-available" };
-    }
-
-    const daySchedule = schedule.daySchedules?.[currentDay];
+    const daySchedule = getTodaySchedule();
     if (!daySchedule) {
       return { label: "Not available", className: "status-not-available" };
     }
@@ -169,6 +179,60 @@ export default function EmployeeDashboard() {
     }
 
     return { label: "Available", className: "status-available" };
+  };
+
+  const formatClockTime = date => {
+    if (!date) return "—";
+    return new Intl.DateTimeFormat("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      second: "2-digit"
+    }).format(date);
+  };
+
+  const handleTemporaryTimeIn = () => {
+    const now = new Date();
+    const daySchedule = getTodaySchedule();
+
+    if (!daySchedule) {
+      setAttendanceLog({
+        timeInAt: now,
+        timeOutAt: null,
+        tag: "Late",
+        note: "No active schedule for today."
+      });
+      return;
+    }
+
+    const scheduledStartMinutes = toMinutes(daySchedule.startTime, daySchedule.startPeriod);
+    if (scheduledStartMinutes === null) {
+      setAttendanceLog({
+        timeInAt: now,
+        timeOutAt: null,
+        tag: "Late",
+        note: "Today's start time is not configured."
+      });
+      return;
+    }
+
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+    const lateThreshold = scheduledStartMinutes + 15;
+    const tag = nowMinutes <= lateThreshold ? "On Time" : "Late";
+
+    setAttendanceLog({
+      timeInAt: now,
+      timeOutAt: null,
+      tag,
+      note: tag === "On Time" ? "You timed in within the grace period." : "You timed in after the 15-minute grace period."
+    });
+  };
+
+  const handleTemporaryTimeOut = () => {
+    setAttendanceLog(current => ({
+      ...current,
+      timeOutAt: new Date(),
+      note: current.timeInAt ? current.note : "Please time in before timing out."
+    }));
   };
 
   const getStatusTag = statusLabel => {
@@ -228,10 +292,16 @@ export default function EmployeeDashboard() {
         </div>
 
         <nav className="nav">
-          <div className="nav-item">Dashboard</div>
-          <div className="nav-item active">Team</div>
-          <div className="nav-item">Attendance</div>
-          <div className="nav-item">Schedule</div>
+          {navItems.map(item => (
+            <button
+              key={item}
+              type="button"
+              className={`nav-item ${activeNav === item ? "active" : ""}`}
+              onClick={() => setActiveNav(item)}
+            >
+              {item}
+            </button>
+          ))}
         </nav>
 
         <button className="sidebar-footer" type="button" onClick={handleLogout}>
@@ -242,19 +312,53 @@ export default function EmployeeDashboard() {
       <main className="main">
         <header className="topbar">
           <div>
-            <h2>TEAM</h2>
-            <div className="section-title">My team cluster overview</div>
+            <h2>{activeNav.toUpperCase()}</h2>
+            <div className="section-title">
+              {activeNav === "Dashboard" ? "Temporary employee time tracking" : "My team cluster overview"}
+            </div>
           </div>
           <span className="datetime">{dateTimeLabel}</span>
         </header>
 
         <section className="content content-muted">
+          {activeNav === "Dashboard" && (
+            <div className="employee-card employee-attendance-card">
+              <div className="employee-card-header">
+                <div className="employee-card-title">Temporary Time In / Time Out</div>
+              </div>
+              <div className="employee-card-body employee-attendance-body">
+                <p className="employee-attendance-copy">
+                  This temporary control marks your status as <strong>On Time</strong> when you time in on schedule or within 15 minutes after start time.
+                  After that, the tag becomes <strong>Late</strong>.
+                </p>
+                <div className="employee-attendance-actions">
+                  <button type="button" className="btn primary" onClick={handleTemporaryTimeIn}>
+                    Time In
+                  </button>
+                  <button type="button" className="btn secondary" onClick={handleTemporaryTimeOut}>
+                    Time Out
+                  </button>
+                </div>
+                <div className="employee-attendance-log">
+                  <div><strong>Time In:</strong> {formatClockTime(attendanceLog.timeInAt)}</div>
+                  <div><strong>Time Out:</strong> {formatClockTime(attendanceLog.timeOutAt)}</div>
+                  <div>
+                    <strong>Status Tag:</strong>{" "}
+                    <span className={`member-status-tag ${attendanceLog.tag ? "is-active" : ""}`}>
+                      {attendanceLog.tag ?? "Pending"}
+                    </span>
+                  </div>
+                  <div><strong>Note:</strong> {attendanceLog.note || "—"}</div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {data.length === 0 && (
             <div className="empty-state">No team cluster details available.</div>
           )}
 
-          {data.length > 0 && (
+          {data.length > 0 && activeNav !== "Dashboard" && (
             <div className="employee-panel">
               <div className="employee-card">
                 <div className="employee-card-header">

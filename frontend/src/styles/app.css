@@ -75,6 +75,10 @@ body {
   font-size: 13px;
   color: #4b5563;
   background: #f9fafb;
+  border: 0;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
 }
 
 .nav-item.active {
@@ -310,6 +314,32 @@ body {
 .employee-panel {
   display: grid;
   gap: 16px;
+}
+
+.employee-attendance-card {
+  margin-bottom: 16px;
+}
+
+.employee-attendance-body {
+  gap: 16px;
+}
+
+.employee-attendance-copy {
+  margin: 0;
+  font-size: 13px;
+  color: #475569;
+}
+
+.employee-attendance-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.employee-attendance-log {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  color: #1f2937;
 }
 
 .employee-card {
