@@ -216,6 +216,14 @@ export default function EmployeeDashboard() {
   };
 
   const handleTimeIn = async () => {
+    if (attendanceLog.timeInAt && !attendanceLog.timeOutAt) {
+      setAttendanceLog(prev => ({
+        ...prev,
+        note: "You are already timed in. Please click Time Out before timing in again."
+      }));
+      return;
+    }
+
     const now = new Date();
     const daySchedule = getTodaySchedule();
 
@@ -253,6 +261,14 @@ export default function EmployeeDashboard() {
   };
 
   const handleTimeOut = async () => {
+    if (!attendanceLog.timeInAt || attendanceLog.timeOutAt) {
+      setAttendanceLog(prev => ({
+        ...prev,
+        note: "You must be timed in before clicking Time Out."
+      }));
+      return;
+    }
+
     const nextAttendance = {
       ...attendanceLog,
       timeOutAt: new Date(),
@@ -285,6 +301,9 @@ export default function EmployeeDashboard() {
   const dayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   const currentStatus = getCurrentStatus();
   const activeAttendanceTag = attendanceLog.tag ?? getStatusTag(currentStatus.label);
+  const hasActiveTimeIn = Boolean(attendanceLog.timeInAt && !attendanceLog.timeOutAt);
+  const canClickTimeIn = !hasActiveTimeIn;
+  const canClickTimeOut = hasActiveTimeIn;
 
   useEffect(() => {
     apiFetch("api/employee_clusters.php").then(response => {
@@ -367,10 +386,10 @@ export default function EmployeeDashboard() {
                   This control marks your status as <strong>On Time</strong> when you time in on schedule or within 15 minutes after start time.
                 </p>
                 <div className="employee-attendance-actions">
-                  <button type="button" className="btn primary" onClick={handleTimeIn}>
+                  <button type="button" className="btn primary" onClick={handleTimeIn} disabled={!canClickTimeIn}>
                     Time In
                   </button>
-                  <button type="button" className="btn secondary" onClick={handleTimeOut}>
+                  <button type="button" className="btn secondary" onClick={handleTimeOut} disabled={!canClickTimeOut}>
                     Time Out
                   </button>
                 </div>
