@@ -4,6 +4,7 @@ import useLiveDateTime from "../hooks/useLiveDateTime";
 import useCurrentUser from "../hooks/useCurrentUser";
 
 export default function CoachDashboard() {
+  const statusTags = ["On Time", "Late", "Break Time", "Lunch Time"];
   const dayOptions = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   const defaultDaySchedule = {
     startTime: "9:00",
@@ -331,6 +332,14 @@ export default function CoachDashboard() {
     }
 
     return { label: "Available", className: "status-available" };
+  };
+
+  const getMemberStatusTag = statusLabel => {
+    if (statusLabel === "On lunch break") return "Lunch Time";
+    if (statusLabel === "On break time") return "Break Time";
+    if (statusLabel === "Not available") return "Late";
+    if (statusLabel === "Available") return "On Time";
+    return null;
   };
 
   useEffect(() => {
@@ -1042,7 +1051,7 @@ useEffect(() => {
                     <span role="columnheader">Fri</span>
                     <span role="columnheader">Sat</span>
                     <span role="columnheader">Sun</span>
-                    <span role="columnheader">Status</span>
+                    <span role="columnheader">Status and Tags</span>
                   </div>
                   {activeMembers.map(member => {
                     const status = getMemberCurrentStatus(member);
@@ -1070,9 +1079,21 @@ useEffect(() => {
                             </div>
                           );
                         })}
-                        <div role="cell">
+                        <div role="cell" className="member-status-and-tags-cell">
                           {status && (
-                            <span className={`member-status-pill ${status.className}`}>{status.label}</span>
+                            <>
+                              <span className={`member-status-pill ${status.className}`}>{status.label}</span>
+                              <div className="member-status-tag-list" aria-label="Status tags">
+                                {statusTags.map(tag => (
+                                  <span
+                                    key={`${member.id}-${tag}`}
+                                    className={`member-status-tag ${getMemberStatusTag(status.label) === tag ? "is-active" : ""}`}
+                                  >
+                                    {tag}
+                                  </span>
+                                ))}
+                              </div>
+                            </>
                           )}
                         </div>
                       </div>

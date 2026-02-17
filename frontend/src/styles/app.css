@@ -439,7 +439,7 @@ body {
 
 .employee-schedule-table .active-members-schedule-header,
 .employee-schedule-table .active-members-schedule-row {
-  grid-template-columns: minmax(150px, 1.2fr) repeat(7, minmax(130px, 1fr));
+  grid-template-columns: minmax(150px, 1.2fr) repeat(7, minmax(130px, 1fr)) minmax(170px, 1fr);
 }
 
 .employee-schedule-table .active-members-owner {
@@ -696,6 +696,37 @@ body {
   font-size: 11px;
   font-weight: 500;
   text-transform: uppercase;
+}
+
+.member-status-and-tags-cell {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+
+.member-status-tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.member-status-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 500;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  background: #f8fafc;
+}
+
+.member-status-tag.is-active {
+  border-color: #1d4ed8;
+  color: #1d4ed8;
+  background: #dbeafe;
 }
 
 .status-lunch {

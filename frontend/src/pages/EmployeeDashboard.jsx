@@ -4,6 +4,7 @@ import useLiveDateTime from "../hooks/useLiveDateTime";
 import useCurrentUser from "../hooks/useCurrentUser";
 
 export default function EmployeeDashboard() {
+  const statusTags = ["On Time", "Late", "Break Time", "Lunch Time"];
   const [data, setData] = useState([]);
   const activeCluster = data[0];
   const dateTimeLabel = useLiveDateTime();
@@ -77,6 +78,107 @@ export default function EmployeeDashboard() {
     };
   };
 
+  const toMinutes = (time, period) => {
+    const [hourPart, minutePart] = String(time).split(":");
+    const hour = Number(hourPart);
+    const minute = Number(minutePart);
+    if (
+      Number.isNaN(hour) ||
+      Number.isNaN(minute) ||
+      hour < 1 ||
+      hour > 12 ||
+      ![0, 30].includes(minute)
+    ) {
+      return null;
+    }
+
+    const normalizedHour = hour % 12;
+    const periodOffset = period === "PM" ? 12 * 60 : 0;
+    return normalizedHour * 60 + minute + periodOffset;
+  };
+
+  const isTimeWithinRange = (nowMinutes, startTime, startPeriod, endTime, endPeriod) => {
+    const startMinutes = toMinutes(startTime, startPeriod);
+    const endMinutes = toMinutes(endTime, endPeriod);
+
+    if (startMinutes === null || endMinutes === null || startMinutes === endMinutes) {
+      return false;
+    }
+
+    if (endMinutes < startMinutes) {
+      return nowMinutes >= startMinutes || nowMinutes < endMinutes;
+    }
+
+    return nowMinutes >= startMinutes && nowMinutes < endMinutes;
+  };
+
+  const getCurrentStatus = () => {
+    const schedule = activeCluster?.schedule;
+    if (!schedule || typeof schedule !== "object" || Array.isArray(schedule)) {
+      return { label: "Not available", className: "status-not-available" };
+    }
+
+    const currentDay = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][new Date().getDay()];
+    const assignedDays = Array.isArray(schedule.days) ? schedule.days : [];
+    if (!assignedDays.includes(currentDay)) {
+      return { label: "Not available", className: "status-not-available" };
+    }
+
+    const daySchedule = schedule.daySchedules?.[currentDay];
+    if (!daySchedule) {
+      return { label: "Not available", className: "status-not-available" };
+    }
+
+    const now = new Date();
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+    if (
+      !isTimeWithinRange(
+        nowMinutes,
+        daySchedule.startTime,
+        daySchedule.startPeriod,
+        daySchedule.endTime,
+        daySchedule.endPeriod
+      )
+    ) {
+      return { label: "Not available", className: "status-not-available" };
+    }
+
+    if (
+      isTimeWithinRange(
+        nowMinutes,
+        daySchedule.lunchBreakStartTime,
+        daySchedule.lunchBreakStartPeriod,
+        daySchedule.lunchBreakEndTime,
+        daySchedule.lunchBreakEndPeriod
+      )
+    ) {
+      return { label: "On lunch break", className: "status-lunch" };
+    }
+
+    if (
+      isTimeWithinRange(
+        nowMinutes,
+        daySchedule.breakStartTime,
+        daySchedule.breakStartPeriod,
+        daySchedule.breakEndTime,
+        daySchedule.breakEndPeriod
+      )
+    ) {
+      return { label: "On break time", className: "status-break" };
+    }
+
+    return { label: "Available", className: "status-available" };
+  };
+
+  const getStatusTag = statusLabel => {
+    if (statusLabel === "On lunch break") return "Lunch Time";
+    if (statusLabel === "On break time") return "Break Time";
+    if (statusLabel === "Not available") return "Late";
+    if (statusLabel === "Available") return "On Time";
+    return null;
+  };
+
   const getActiveDays = schedule => {
     if (!schedule) return [];
     if (Array.isArray(schedule)) {
@@ -91,6 +193,7 @@ export default function EmployeeDashboard() {
 
   const scheduleDays = getActiveDays(activeCluster?.schedule);
   const dayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const currentStatus = getCurrentStatus();
 
   useEffect(() => {
     apiFetch("api/employee_clusters.php").then(response => {
@@ -199,6 +302,7 @@ export default function EmployeeDashboard() {
                       {dayLabels.map(day => (
                         <span key={`${day}-header`} role="columnheader">{day}</span>
                       ))}
+                      <span role="columnheader">Status and Tags</span>
                     </div>
                     <div className="active-members-schedule-row" role="row">
                       <div className="active-members-owner" role="cell">
@@ -225,6 +329,21 @@ export default function EmployeeDashboard() {
                           </div>
                         );
                       })}
+                      <div role="cell" className="member-status-and-tags-cell">
+                        <span className={`member-status-pill ${currentStatus.className}`}>
+                          {currentStatus.label}
+                        </span>
+                        <div className="member-status-tag-list" aria-label="Status tags">
+                          {statusTags.map(tag => (
+                            <span
+                              key={`employee-${tag}`}
+                              className={`member-status-tag ${getStatusTag(currentStatus.label) === tag ? "is-active" : ""}`}
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   </div>
                    <div className="employee-schedule-caption">
