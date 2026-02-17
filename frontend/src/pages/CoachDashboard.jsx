@@ -902,7 +902,7 @@ useEffect(() => {
         <nav className="nav">
           <div className="nav-item">Dashboard</div>
           <div className="nav-item active">Team</div>
-          <div className="nav-item">Attendance</div>
+          <button className="nav-item" type="button" onClick={() => (window.location.href = "/coach/attendance")}>Attendance</button>
           <div className="nav-item">Schedule</div>
         </nav>
 

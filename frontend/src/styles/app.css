@@ -1371,3 +1371,13 @@ body {
     grid-template-columns: 1fr;
   }
 }
+.attendance-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.attendance-table .table-cell {
+  word-break: break-word;
+}
