@@ -4,7 +4,7 @@ import useLiveDateTime from "../hooks/useLiveDateTime";
 import useCurrentUser from "../hooks/useCurrentUser";
 
 export default function CoachDashboard() {
-  const statusTags = ["On Time", "Late", "Break Time", "Lunch Time"];
+  const statusTags = ["On Time", "Late"];
   const dayOptions = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   const defaultDaySchedule = {
     startTime: "9:00",

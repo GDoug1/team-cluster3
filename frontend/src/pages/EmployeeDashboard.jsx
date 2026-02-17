@@ -4,7 +4,7 @@ import useLiveDateTime from "../hooks/useLiveDateTime";
 import useCurrentUser from "../hooks/useCurrentUser";
 
 export default function EmployeeDashboard() {
-  const statusTags = ["On Time", "Late", "Break Time", "Lunch Time"];
+  const statusTags = ["On Time", "Late"];
   const navItems = ["Dashboard", "Team", "Attendance", "Schedule"];
   const [data, setData] = useState([]);
   const [activeNav, setActiveNav] = useState("Team");
