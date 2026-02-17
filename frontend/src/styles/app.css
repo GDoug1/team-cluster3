@@ -624,6 +624,26 @@ body {
   gap: 8px;
 }
 
+.active-team-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.active-team-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #334155;
+}
+
+.active-team-filter .member-select {
+  min-width: 160px;
+}
+
 .active-members-schedule-table {
   border: 1px solid #d1d5db;
   border-radius: 12px;
@@ -973,6 +993,15 @@ body {
   .active-members-schedule-header,
   .active-members-schedule-row {
     grid-template-columns: minmax(120px, 1.2fr) repeat(7, minmax(130px, 1fr)) minmax(130px, 1fr);
+  }
+
+  .active-team-filter {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .active-team-filter .member-select {
+    flex: 1;
   }
 
   .member-item .member-action {

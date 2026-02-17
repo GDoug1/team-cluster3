@@ -49,6 +49,7 @@ export default function CoachDashboard() {
   const [activeMembers, setActiveMembers] = useState([]);
   const [activeMembersLoading, setActiveMembersLoading] = useState(false);
   const [activeMembersError, setActiveMembersError] = useState("");
+  const [activeMemberTagFilter, setActiveMemberTagFilter] = useState("all");
   const [scheduleForm, setScheduleForm] = useState({
     days: ["Mon", "Tue", "Wed", "Thu", "Fri"],
     daySchedules: {
@@ -341,6 +342,16 @@ export default function CoachDashboard() {
     if (statusLabel === "Available") return "On Time";
     return null;
   };
+
+  const getActiveStatusTag = member => {
+    const status = getMemberCurrentStatus(member);
+    return member.attendance_tag ?? getMemberStatusTag(status?.label);
+  };
+
+  const filteredActiveMembers = activeMembers.filter(member => {
+    if (activeMemberTagFilter === "all") return true;
+    return getActiveStatusTag(member) === activeMemberTagFilter;
+  });
 
   useEffect(() => {
     apiFetch("api/coach_clusters.php").then(setClusters);
@@ -1030,7 +1041,23 @@ useEffect(() => {
 
           {clusters.some(cluster => cluster.status === "active") && (
             <div className="active-team-panel">
-              <div className="section-title">Active Team Members</div>
+              <div className="active-team-header">
+                <div className="section-title">Active Team Members</div>
+                <label className="active-team-filter" htmlFor="active-member-tag-filter">
+                  <span>Filter by Tag</span>
+                  <select
+                    id="active-member-tag-filter"
+                    className="member-select"
+                    value={activeMemberTagFilter}
+                    onChange={event => setActiveMemberTagFilter(event.target.value)}
+                  >
+                    <option value="all">All Tags</option>
+                    {statusTags.map(tag => (
+                      <option key={tag} value={tag}>{tag}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
               {activeMembersLoading && (
                 <div className="modal-text">Loading members...</div>
               )}
@@ -1040,7 +1067,10 @@ useEffect(() => {
               {!activeMembersLoading && !activeMembersError && activeMembers.length === 0 && (
                 <div className="empty-state">No employees added to the active cluster yet.</div>
               )}
-              {!activeMembersLoading && !activeMembersError && activeMembers.length > 0 && (
+              {!activeMembersLoading && !activeMembersError && activeMembers.length > 0 && filteredActiveMembers.length === 0 && (
+                <div className="empty-state">No employees match the selected tag.</div>
+              )}
+              {!activeMembersLoading && !activeMembersError && filteredActiveMembers.length > 0 && (
                 <div className="active-members-schedule-table" role="table" aria-label="Active team schedule">
                   <div className="active-members-schedule-header" role="row">
                     <span role="columnheader">Members</span>
@@ -1053,9 +1083,9 @@ useEffect(() => {
                     <span role="columnheader">Sun</span>
                     <span role="columnheader">Status and Tags</span>
                   </div>
-                  {activeMembers.map(member => {
+                  {filteredActiveMembers.map(member => {
                     const status = getMemberCurrentStatus(member);
-                    const activeStatusTag = member.attendance_tag ?? getMemberStatusTag(status?.label);
+                    const activeStatusTag = getActiveStatusTag(member);
                     return (
                       <div key={member.id} className="active-members-schedule-row" role="row">
                         <div className="active-members-owner" role="cell">{member.fullname}</div>
