@@ -195,7 +195,6 @@ export default function CoachAttendancePage() {
                     <div>Time In</div>
                     <div>Time Out</div>
                     <div>Tag</div>
-                    <div>Note</div>
                   </div>
                   {filteredAttendanceRows.map(member => (
                     <button
@@ -208,7 +207,6 @@ export default function CoachAttendancePage() {
                       <div className="table-cell">{formatDateTime(member.time_in_at)}</div>
                       <div className="table-cell">{formatDateTime(member.time_out_at)}</div>
                       <div className="table-cell">{member.attendance_tag ?? "Pending"}</div>
-                      <div className="table-cell muted">{member.attendance_note || "—"}</div>
                     </button>
                   ))}
                 </div>
@@ -240,10 +238,6 @@ export default function CoachAttendancePage() {
                         <span className="attendance-detail-value">{selectedMember.attendance_tag ?? "Pending"}</span>
                       </div>
                       <div className="attendance-detail-item attendance-detail-note">
-                        <span className="attendance-detail-label">Coach Note</span>
-                        <span className="attendance-detail-value">{selectedMember.attendance_note || "No note provided."}</span>
-                      </div>
-                      <div className="attendance-detail-item attendance-detail-note">
                         <span className="attendance-detail-label">Attendance History</span>
                         {Array.isArray(selectedMember.attendance_history) && selectedMember.attendance_history.length > 0 ? (
                           <div className="attendance-history-list">
@@ -256,7 +250,6 @@ export default function CoachAttendancePage() {
                                       <div><strong>Clock In:</strong> {formatDateTime(entry.time_in_at)}</div>
                                       <div><strong>Clock Out:</strong> {formatDateTime(entry.time_out_at)}</div>
                                       <div><strong>Status:</strong> {entry.tag ?? "Pending"}</div>
-                                      <div><strong>Note:</strong> {entry.note || "—"}</div>
                                     </div>
                                   ))}
                                 </div>

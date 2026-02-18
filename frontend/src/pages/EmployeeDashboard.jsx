@@ -11,8 +11,7 @@ export default function EmployeeDashboard() {
   const [attendanceLog, setAttendanceLog] = useState({
     timeInAt: null,
     timeOutAt: null,
-    tag: null,
-    note: ""
+    tag: null
   });
   const activeCluster = data[0];
   const dateTimeLabel = useLiveDateTime();
@@ -234,19 +233,12 @@ export default function EmployeeDashboard() {
     setAttendanceLog({
       timeInAt: parseSqlDateTime(savedAttendance.timeInAt),
       timeOutAt: parseSqlDateTime(savedAttendance.timeOutAt),
-      tag: savedAttendance.tag ?? null,
-      note: savedAttendance.note ?? ""
+      tag: savedAttendance.tag ?? null
     });
   };
 
   const handleTimeIn = async () => {
-    if (attendanceLog.timeInAt && !attendanceLog.timeOutAt) {
-      setAttendanceLog(prev => ({
-        ...prev,
-        note: "You are already timed in. Please click Time Out before timing in again."
-      }));
-      return;
-    }
+    if (attendanceLog.timeInAt && !attendanceLog.timeOutAt) return;
 
     const now = new Date();
     const daySchedule = getTodaySchedule();
@@ -255,8 +247,7 @@ export default function EmployeeDashboard() {
       await persistAttendance({
         timeInAt: now,
         timeOutAt: null,
-        tag: "Late",
-        note: "No active schedule for today."
+        tag: "Late"
       });
       return;
     }
@@ -266,8 +257,7 @@ export default function EmployeeDashboard() {
       await persistAttendance({
         timeInAt: now,
         timeOutAt: null,
-        tag: "Late",
-        note: "Today's start time is not configured."
+        tag: "Late"
       });
       return;
     }
@@ -279,24 +269,16 @@ export default function EmployeeDashboard() {
    await persistAttendance({
       timeInAt: now,
       timeOutAt: null,
-      tag,
-      note: tag === "On Time" ? "You timed in within the grace period." : "You timed in after the 15-minute grace period."
+      tag
     });
   };
 
   const handleTimeOut = async () => {
-    if (!attendanceLog.timeInAt || attendanceLog.timeOutAt) {
-      setAttendanceLog(prev => ({
-        ...prev,
-        note: "You must be timed in before clicking Time Out."
-      }));
-      return;
-    }
+    if (!attendanceLog.timeInAt || attendanceLog.timeOutAt) return;
 
     const nextAttendance = {
       ...attendanceLog,
-      timeOutAt: new Date(),
-      note: attendanceLog.timeInAt ? attendanceLog.note : "Please time in before timing out."
+      timeOutAt: new Date()
     };
     await persistAttendance(nextAttendance);
   };
@@ -341,8 +323,7 @@ export default function EmployeeDashboard() {
         setAttendanceLog({
           timeInAt: parseSqlDateTime(active.time_in_at),
           timeOutAt: parseSqlDateTime(active.time_out_at),
-          tag: active.attendance_tag ?? null,
-          note: active.attendance_note ?? ""
+          tag: active.attendance_tag ?? null
         });
       }
     });
@@ -426,7 +407,6 @@ export default function EmployeeDashboard() {
                       {attendanceLog.tag ?? "Pending"}
                     </span>
                   </div>
-                  <div><strong>Note:</strong> {attendanceLog.note || "—"}</div>
                 </div>
               </div>
             </div>
