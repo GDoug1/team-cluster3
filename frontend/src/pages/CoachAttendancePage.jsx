@@ -11,18 +11,6 @@ const formatDateTime = value => {
   return date.toLocaleString();
 };
 
-const formatSchedule = schedule => {
-  if (!schedule) return "No schedule configured yet.";
-
-  try {
-    const parsed = JSON.parse(schedule);
-    if (!Array.isArray(parsed) || parsed.length === 0) return "No schedule configured yet.";
-    return parsed.join(", ");
-  } catch {
-    return schedule;
-  }
-};
-
 export default function CoachAttendancePage() {
   const navigate = useNavigate();
   const { user } = useCurrentUser();
@@ -321,10 +309,6 @@ export default function CoachAttendancePage() {
                         ) : (
                           <span className="attendance-detail-value">No attendance history yet.</span>
                         )}
-                      </div>
-                      <div className="attendance-detail-item attendance-detail-note">
-                        <span className="attendance-detail-label">Weekly Schedule</span>
-                        <span className="attendance-detail-value">{formatSchedule(selectedMember.schedule)}</span>
                       </div>
                     </div>
                   </section>
