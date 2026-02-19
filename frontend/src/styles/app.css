@@ -1551,3 +1551,29 @@ body {
   background: #cbd5e1;
   border-radius: 999px;
 }
+.employee-attendance-history-table {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.employee-attendance-history-header,
+.employee-attendance-history-row {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr 1fr 0.8fr;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
+.employee-attendance-history-header {
+  background: #f8fafc;
+  font-weight: 600;
+  color: #334155;
+}
+
+.employee-attendance-history-row {
+  border-top: 1px solid #e5e7eb;
+  color: #1f2937;
+}

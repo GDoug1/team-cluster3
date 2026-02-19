@@ -13,6 +13,7 @@ export default function EmployeeDashboard() {
     timeOutAt: null,
     tag: null
   });
+  const [attendanceHistory, setAttendanceHistory] = useState([]);
   const activeCluster = data[0];
   const dateTimeLabel = useLiveDateTime();
   const { user } = useCurrentUser();
@@ -188,6 +189,19 @@ export default function EmployeeDashboard() {
     }).format(date);
   };
 
+  const formatDateTimeLabel = value => {
+    const parsedDate = value instanceof Date ? value : parseSqlDateTime(value);
+    if (!parsedDate || Number.isNaN(parsedDate.getTime())) return "—";
+
+    return new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit"
+    }).format(parsedDate);
+  };
+
   const toLocalSqlDateTime = date => {
     const year = date.getFullYear();
     const month = `${date.getMonth() + 1}`.padStart(2, "0");
@@ -235,6 +249,9 @@ export default function EmployeeDashboard() {
       timeOutAt: parseSqlDateTime(savedAttendance.timeOutAt),
       tag: savedAttendance.tag ?? null
     });
+
+    const history = await apiFetch("api/employee_attendance_history.php");
+    setAttendanceHistory(history);
   };
 
   const handleTimeIn = async () => {
@@ -330,6 +347,10 @@ export default function EmployeeDashboard() {
         });
       }
     });
+
+    apiFetch("api/employee_attendance_history.php").then(response => {
+      setAttendanceHistory(response);
+    });
   }, []);
 
   const handleLogout = async () => {
@@ -377,7 +398,11 @@ export default function EmployeeDashboard() {
           <div>
             <h2>{activeNav.toUpperCase()}</h2>
             <div className="section-title">
-              {activeNav === "Dashboard" ? "Employee time tracking" : "My team cluster overview"}
+              {activeNav === "Dashboard"
+                ? "Employee time tracking"
+                : activeNav === "Attendance"
+                  ? "Attendance history"
+                  : "My team cluster overview"}
             </div>
           </div>
           <span className="datetime">{dateTimeLabel}</span>
@@ -420,12 +445,50 @@ export default function EmployeeDashboard() {
             </div>
           )}
 
-          {data.length === 0 && (
+          {data.length === 0 && activeNav !== "Attendance" && (
             <div className="empty-state">No team cluster details available.</div>
           )}
 
-          {data.length > 0 && activeNav !== "Dashboard" && (
+          {(activeNav === "Attendance" || data.length > 0) && activeNav !== "Dashboard" && (
             <div className="employee-panel">
+              {activeNav === "Attendance" && (
+                <div className="employee-card">
+                  <div className="employee-card-header">
+                    <div className="employee-card-title">Attendance History</div>
+                  </div>
+                  <div className="employee-card-body">
+                    {attendanceHistory.length === 0 ? (
+                      <div className="empty-state">No attendance records yet.</div>
+                    ) : (
+                      <div className="employee-attendance-history-table" role="table" aria-label="Attendance history">
+                        <div className="employee-attendance-history-header" role="row">
+                          <span role="columnheader">Date</span>
+                          <span role="columnheader">Cluster</span>
+                          <span role="columnheader">Time In</span>
+                          <span role="columnheader">Time Out</span>
+                          <span role="columnheader">Tag</span>
+                        </div>
+                        {attendanceHistory.map(item => (
+                          <div key={item.id} className="employee-attendance-history-row" role="row">
+                            <span role="cell">{formatDateTimeLabel(item.time_in_at ?? item.updated_at)}</span>
+                            <span role="cell">{item.cluster_name ?? "—"}</span>
+                            <span role="cell">{formatDateTimeLabel(item.time_in_at)}</span>
+                            <span role="cell">{formatDateTimeLabel(item.time_out_at)}</span>
+                            <span role="cell">
+                              <span className={`member-status-tag ${item.tag ? "is-active" : ""}`}>
+                                {item.tag ?? "Pending"}
+                              </span>
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {activeNav !== "Attendance" && (
+                <>
               <div className="employee-card">
                 <div className="employee-card-header">
                   <div className="employee-card-title">My Team Cluster Details</div>
@@ -469,6 +532,7 @@ export default function EmployeeDashboard() {
                 <div className="employee-card-footer">
                 </div>
               </div>
+
               <div className="employee-card">
                 <div className="employee-card-header">
                   <div className="employee-card-title">My Schedule</div>
@@ -524,10 +588,12 @@ export default function EmployeeDashboard() {
                       </div>
                     </div>
                   </div>
-                   <div className="employee-schedule-caption">
+                  <div className="employee-schedule-caption">
                   </div>
                 </div>
               </div>
+              </>
+              )}
             </div>
           )}
         </section>
