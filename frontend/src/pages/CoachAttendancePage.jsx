@@ -33,6 +33,7 @@ export default function CoachAttendancePage() {
   const [activeCluster, setActiveCluster] = useState(null);
   const [attendanceRows, setAttendanceRows] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [historyDateFilter, setHistoryDateFilter] = useState("");
   const [selectedMember, setSelectedMember] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -94,6 +95,30 @@ export default function CoachAttendancePage() {
 
     return { total, timedIn, completed };
   }, [attendanceRows]);
+
+  const filteredAttendanceHistory = useMemo(() => {
+    if (!selectedMember || !Array.isArray(selectedMember.attendance_history)) return [];
+    if (!historyDateFilter) return selectedMember.attendance_history;
+
+    return selectedMember.attendance_history
+      .map(monthHistory => ({
+        ...monthHistory,
+        entries: monthHistory.entries.filter(entry => {
+          const timeIn = entry.time_in_at ? new Date(entry.time_in_at) : null;
+          const timeOut = entry.time_out_at ? new Date(entry.time_out_at) : null;
+
+          const matchesTimeIn = timeIn && !Number.isNaN(timeIn.getTime())
+            ? timeIn.toISOString().slice(0, 10) === historyDateFilter
+            : false;
+          const matchesTimeOut = timeOut && !Number.isNaN(timeOut.getTime())
+            ? timeOut.toISOString().slice(0, 10) === historyDateFilter
+            : false;
+
+          return matchesTimeIn || matchesTimeOut;
+        }),
+      }))
+      .filter(monthHistory => monthHistory.entries.length > 0);
+  }, [historyDateFilter, selectedMember]);
 
   const handleLogout = async () => {
     try {
@@ -201,7 +226,10 @@ export default function CoachAttendancePage() {
                       key={member.id}
                       type="button"
                       className="table-row attendance-row-button"
-                      onClick={() => setSelectedMember(member)}
+                      onClick={() => {
+                        setSelectedMember(member);
+                        setHistoryDateFilter("");
+                      }}
                     >
                       <div className="table-cell attendance-name">{member.fullname}</div>
                       <div className="table-cell">{formatDateTime(member.time_in_at)}</div>
@@ -213,14 +241,20 @@ export default function CoachAttendancePage() {
               )}
 
               {selectedMember && (
-                <div className="modal-overlay" role="presentation" onClick={() => setSelectedMember(null)}>
+                <div className="modal-overlay" role="presentation" onClick={() => {
+                        setSelectedMember(null);
+                        setHistoryDateFilter("");
+                      }}>
                   <section className="modal-card attendance-modal" role="dialog" aria-modal="true" onClick={event => event.stopPropagation()}>
                     <header className="modal-header">
                       <div>
                         <h3 className="modal-title">{selectedMember.fullname}</h3>
                         <p className="modal-subtitle">Attendance details</p>
                       </div>
-                      <button type="button" className="btn secondary" onClick={() => setSelectedMember(null)}>
+                      <button type="button" className="btn secondary" onClick={() => {
+                        setSelectedMember(null);
+                        setHistoryDateFilter("");
+                      }}>
                         Close
                       </button>
                     </header>
@@ -240,8 +274,18 @@ export default function CoachAttendancePage() {
                       <div className="attendance-detail-item attendance-detail-note">
                         <span className="attendance-detail-label">Attendance History</span>
                         {Array.isArray(selectedMember.attendance_history) && selectedMember.attendance_history.length > 0 ? (
-                          <div className="attendance-history-list">
-                            {selectedMember.attendance_history.map(monthHistory => (
+                          <>
+                            <label className="attendance-history-filter" htmlFor="attendance-history-date-filter">
+                              <span>Filter by date</span>
+                              <input
+                                id="attendance-history-date-filter"
+                                type="date"
+                                value={historyDateFilter}
+                                onChange={event => setHistoryDateFilter(event.target.value)}
+                              />
+                            </label>
+                            <div className="attendance-history-list">
+                            {filteredAttendanceHistory.map(monthHistory => (
                               <div key={monthHistory.month} className="attendance-history-month">
                                 <div className="attendance-history-month-title">{formatMonthTitle(monthHistory.month)}</div>
                                 <div className="attendance-history-entries">
@@ -250,12 +294,17 @@ export default function CoachAttendancePage() {
                                       <div><strong>Clock In:</strong> {formatDateTime(entry.time_in_at)}</div>
                                       <div><strong>Clock Out:</strong> {formatDateTime(entry.time_out_at)}</div>
                                       <div><strong>Status:</strong> {entry.tag ?? "Pending"}</div>
+                                      <div><strong>Note:</strong> {entry.note ?? "—"}</div>
                                     </div>
                                   ))}
                                 </div>
                               </div>
                             ))}
                           </div>
+                            {filteredAttendanceHistory.length === 0 && (
+                              <span className="attendance-detail-value">No attendance records match the selected date.</span>
+                            )}
+                          </>
                         ) : (
                           <span className="attendance-detail-value">No attendance history yet.</span>
                         )}

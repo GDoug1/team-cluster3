@@ -1426,13 +1426,19 @@ body {
 }
 
 .attendance-modal {
-  width: min(640px, 94vw);
+  width: min(980px, 96vw);
+  max-height: min(88vh, 900px);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
 }
 
 .attendance-modal-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 6px;
 }
 
 .attendance-detail-item {
@@ -1460,9 +1466,32 @@ body {
   color: #1e293b;
 }
 
+.attendance-history-filter {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 10px;
+  max-width: 220px;
+}
+
+.attendance-history-filter span {
+  font-size: 12px;
+  color: #334155;
+}
+
+.attendance-history-filter input {
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+  background: #ffffff;
+}
+
 .attendance-history-list {
   display: grid;
   gap: 10px;
+  max-height: min(42vh, 420px);
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 .attendance-history-month {
@@ -1511,4 +1540,14 @@ body {
   .attendance-modal-grid {
     grid-template-columns: 1fr;
   }
+}
+.attendance-modal-grid::-webkit-scrollbar,
+.attendance-history-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.attendance-modal-grid::-webkit-scrollbar-thumb,
+.attendance-history-list::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
 }
