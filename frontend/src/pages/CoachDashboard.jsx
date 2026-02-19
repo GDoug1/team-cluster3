@@ -4,7 +4,7 @@ import useLiveDateTime from "../hooks/useLiveDateTime";
 import useCurrentUser from "../hooks/useCurrentUser";
 
 export default function CoachDashboard() {
-  const statusTags = ["On Time", "Late"];
+  const statusTags = ["On Time", "Late", "Pending"];
   const dayOptions = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   const defaultDaySchedule = {
     startTime: "9:00",
@@ -338,7 +338,7 @@ export default function CoachDashboard() {
   const getMemberStatusTag = statusLabel => {
     if (statusLabel === "On lunch break") return "Lunch Time";
     if (statusLabel === "On break time") return "Break Time";
-    if (statusLabel === "Not available") return "Late";
+    if (statusLabel === "Not available") return "Pending";
     if (statusLabel === "Available") return "On Time";
     return null;
   };
