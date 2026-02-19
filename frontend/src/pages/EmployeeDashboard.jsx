@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "../api/api";
 import useLiveDateTime from "../hooks/useLiveDateTime";
 import useCurrentUser from "../hooks/useCurrentUser";
@@ -14,6 +14,8 @@ export default function EmployeeDashboard() {
     tag: null
   });
   const [attendanceHistory, setAttendanceHistory] = useState([]);
+  const [historyDateStartFilter, setHistoryDateStartFilter] = useState("");
+  const [historyDateEndFilter, setHistoryDateEndFilter] = useState("");
   const activeCluster = data[0];
   const dateTimeLabel = useLiveDateTime();
   const { user } = useCurrentUser();
@@ -202,6 +204,16 @@ export default function EmployeeDashboard() {
     }).format(parsedDate);
   };
 
+  const toDateInputValue = value => {
+    const parsedDate = value instanceof Date ? value : parseSqlDateTime(value);
+    if (!parsedDate || Number.isNaN(parsedDate.getTime())) return null;
+
+    const year = parsedDate.getFullYear();
+    const month = `${parsedDate.getMonth() + 1}`.padStart(2, "0");
+    const day = `${parsedDate.getDate()}`.padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
   const toLocalSqlDateTime = date => {
     const year = date.getFullYear();
     const month = `${date.getMonth() + 1}`.padStart(2, "0");
@@ -353,6 +365,22 @@ export default function EmployeeDashboard() {
     });
   }, []);
 
+  const filteredAttendanceHistory = useMemo(() => {
+    if (!historyDateStartFilter && !historyDateEndFilter) return attendanceHistory;
+
+    const activeStartDate = historyDateStartFilter || null;
+    const activeEndDate = historyDateEndFilter || null;
+
+    return attendanceHistory.filter(item => {
+      const entryDate = toDateInputValue(item.time_in_at ?? item.time_out_at ?? item.updated_at);
+      if (!entryDate) return false;
+
+      if (activeStartDate && entryDate < activeStartDate) return false;
+      if (activeEndDate && entryDate > activeEndDate) return false;
+      return true;
+    });
+  }, [attendanceHistory, historyDateEndFilter, historyDateStartFilter]);
+
   const handleLogout = async () => {
     try {
       await apiFetch("auth/logout.php", { method: "POST" });
@@ -460,28 +488,54 @@ export default function EmployeeDashboard() {
                     {attendanceHistory.length === 0 ? (
                       <div className="empty-state">No attendance records yet.</div>
                     ) : (
-                      <div className="employee-attendance-history-table" role="table" aria-label="Attendance history">
-                        <div className="employee-attendance-history-header" role="row">
-                          <span role="columnheader">Date</span>
-                          <span role="columnheader">Cluster</span>
-                          <span role="columnheader">Time In</span>
-                          <span role="columnheader">Time Out</span>
-                          <span role="columnheader">Tag</span>
+                      <>
+                        <div className="attendance-history-range-filter" role="group" aria-label="Filter attendance history by date range">
+                          <label className="attendance-history-filter" htmlFor="employee-attendance-history-date-filter-start">
+                            <span>From</span>
+                            <input
+                              id="employee-attendance-history-date-filter-start"
+                              type="date"
+                              value={historyDateStartFilter}
+                              onChange={event => setHistoryDateStartFilter(event.target.value)}
+                            />
+                          </label>
+                          <label className="attendance-history-filter" htmlFor="employee-attendance-history-date-filter-end">
+                            <span>To</span>
+                            <input
+                              id="employee-attendance-history-date-filter-end"
+                              type="date"
+                              value={historyDateEndFilter}
+                              onChange={event => setHistoryDateEndFilter(event.target.value)}
+                            />
+                          </label>
                         </div>
-                        {attendanceHistory.map(item => (
-                          <div key={item.id} className="employee-attendance-history-row" role="row">
-                            <span role="cell">{formatDateTimeLabel(item.time_in_at ?? item.updated_at)}</span>
-                            <span role="cell">{item.cluster_name ?? "—"}</span>
-                            <span role="cell">{formatDateTimeLabel(item.time_in_at)}</span>
-                            <span role="cell">{formatDateTimeLabel(item.time_out_at)}</span>
-                            <span role="cell">
-                              <span className={`member-status-tag ${item.tag ? "is-active" : ""}`}>
-                                {item.tag ?? "Pending"}
-                              </span>
-                            </span>
+                        {filteredAttendanceHistory.length > 0 ? (
+                          <div className="employee-attendance-history-table" role="table" aria-label="Attendance history">
+                            <div className="employee-attendance-history-header" role="row">
+                              <span role="columnheader">Date</span>
+                              <span role="columnheader">Cluster</span>
+                              <span role="columnheader">Time In</span>
+                              <span role="columnheader">Time Out</span>
+                              <span role="columnheader">Tag</span>
+                            </div>
+                            {filteredAttendanceHistory.map(item => (
+                              <div key={item.id} className="employee-attendance-history-row" role="row">
+                                <span role="cell">{formatDateTimeLabel(item.time_in_at ?? item.updated_at)}</span>
+                                <span role="cell">{item.cluster_name ?? "—"}</span>
+                                <span role="cell">{formatDateTimeLabel(item.time_in_at)}</span>
+                                <span role="cell">{formatDateTimeLabel(item.time_out_at)}</span>
+                                <span role="cell">
+                                  <span className={`member-status-tag ${item.tag ? "is-active" : ""}`}>
+                                    {item.tag ?? "Pending"}
+                                  </span>
+                                </span>
+                              </div>
+                            ))}
                           </div>
-                        ))}
-                      </div>
+                        ) : (
+                          <div className="empty-state">No attendance records match the selected date range.</div>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>

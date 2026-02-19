@@ -1473,6 +1473,13 @@ body {
   max-width: 220px;
 }
 
+.attendance-history-range-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
 .attendance-history-filter span {
   font-size: 12px;
   color: #334155;

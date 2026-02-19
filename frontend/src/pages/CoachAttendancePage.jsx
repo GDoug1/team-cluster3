@@ -19,10 +19,22 @@ export default function CoachAttendancePage() {
   const [activeCluster, setActiveCluster] = useState(null);
   const [attendanceRows, setAttendanceRows] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [historyDateFilter, setHistoryDateFilter] = useState("");
+  const [historyDateStartFilter, setHistoryDateStartFilter] = useState("");
+  const [historyDateEndFilter, setHistoryDateEndFilter] = useState("");
   const [selectedMember, setSelectedMember] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const toDateInputValue = value => {
+    if (!value) return null;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return null;
+
+    const year = date.getFullYear();
+    const month = `${date.getMonth() + 1}`.padStart(2, "0");
+    const day = `${date.getDate()}`.padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
 
   useEffect(() => {
     let ignore = false;
@@ -84,27 +96,25 @@ export default function CoachAttendancePage() {
 
   const filteredAttendanceHistory = useMemo(() => {
     if (!selectedMember || !Array.isArray(selectedMember.attendance_history)) return [];
-    if (!historyDateFilter) return selectedMember.attendance_history;
+    if (!historyDateStartFilter && !historyDateEndFilter) return selectedMember.attendance_history;
+
+    const activeStartDate = historyDateStartFilter || null;
+    const activeEndDate = historyDateEndFilter || null;
 
     return selectedMember.attendance_history
       .map(monthHistory => ({
         ...monthHistory,
         entries: monthHistory.entries.filter(entry => {
-          const timeIn = entry.time_in_at ? new Date(entry.time_in_at) : null;
-          const timeOut = entry.time_out_at ? new Date(entry.time_out_at) : null;
+          const entryDate = toDateInputValue(entry.time_in_at ?? entry.time_out_at);
+          if (!entryDate) return false;
 
-          const matchesTimeIn = timeIn && !Number.isNaN(timeIn.getTime())
-            ? timeIn.toISOString().slice(0, 10) === historyDateFilter
-            : false;
-          const matchesTimeOut = timeOut && !Number.isNaN(timeOut.getTime())
-            ? timeOut.toISOString().slice(0, 10) === historyDateFilter
-            : false;
-
-          return matchesTimeIn || matchesTimeOut;
+          if (activeStartDate && entryDate < activeStartDate) return false;
+          if (activeEndDate && entryDate > activeEndDate) return false;
+          return true;
         }),
       }))
       .filter(monthHistory => monthHistory.entries.length > 0);
-  }, [historyDateFilter, selectedMember]);
+  }, [historyDateEndFilter, historyDateStartFilter, selectedMember]);
 
   const attendanceHistoryEntries = useMemo(() => (
     filteredAttendanceHistory.flatMap(monthHistory => monthHistory.entries ?? [])
@@ -218,7 +228,8 @@ export default function CoachAttendancePage() {
                       className="table-row attendance-row-button"
                       onClick={() => {
                         setSelectedMember(member);
-                        setHistoryDateFilter("");
+                        setHistoryDateStartFilter("");
+                        setHistoryDateEndFilter("");
                       }}
                     >
                       <div className="table-cell attendance-name">{member.fullname}</div>
@@ -233,7 +244,8 @@ export default function CoachAttendancePage() {
               {selectedMember && (
                 <div className="modal-overlay" role="presentation" onClick={() => {
                         setSelectedMember(null);
-                        setHistoryDateFilter("");
+                        setHistoryDateStartFilter("");
+                        setHistoryDateEndFilter("");
                       }}>
                   <section className="modal-card attendance-modal" role="dialog" aria-modal="true" onClick={event => event.stopPropagation()}>
                     <header className="modal-header">
@@ -243,7 +255,8 @@ export default function CoachAttendancePage() {
                       </div>
                       <button type="button" className="btn secondary" onClick={() => {
                         setSelectedMember(null);
-                        setHistoryDateFilter("");
+                        setHistoryDateStartFilter("");
+                        setHistoryDateEndFilter("");
                       }}>
                         Close
                       </button>
@@ -253,15 +266,26 @@ export default function CoachAttendancePage() {
                         <span className="attendance-detail-label">Attendance History</span>
                         {Array.isArray(selectedMember.attendance_history) && selectedMember.attendance_history.length > 0 ? (
                           <>
-                            <label className="attendance-history-filter" htmlFor="attendance-history-date-filter">
-                              <span>Filter by date</span>
-                              <input
-                                id="attendance-history-date-filter"
-                                type="date"
-                                value={historyDateFilter}
-                                onChange={event => setHistoryDateFilter(event.target.value)}
-                              />
-                            </label>
+                            <div className="attendance-history-range-filter" role="group" aria-label="Filter attendance history by date range">
+                              <label className="attendance-history-filter" htmlFor="attendance-history-date-filter-start">
+                                <span>From</span>
+                                <input
+                                  id="attendance-history-date-filter-start"
+                                  type="date"
+                                  value={historyDateStartFilter}
+                                  onChange={event => setHistoryDateStartFilter(event.target.value)}
+                                />
+                              </label>
+                              <label className="attendance-history-filter" htmlFor="attendance-history-date-filter-end">
+                                <span>To</span>
+                                <input
+                                  id="attendance-history-date-filter-end"
+                                  type="date"
+                                  value={historyDateEndFilter}
+                                  onChange={event => setHistoryDateEndFilter(event.target.value)}
+                                />
+                              </label>
+                            </div>
                             {attendanceHistoryEntries.length > 0 && (
                               <div className="employee-attendance-history-table" role="table" aria-label="Attendance history">
                                 <div className="employee-attendance-history-header" role="row">
@@ -291,7 +315,7 @@ export default function CoachAttendancePage() {
                               </div>
                             )}
                             {attendanceHistoryEntries.length === 0 && (
-                              <span className="attendance-detail-value">No attendance records match the selected date.</span>
+                              <span className="attendance-detail-value">No attendance records match the selected date range.</span>
                             )}
                           </>
                         ) : (
