@@ -249,18 +249,6 @@ export default function CoachAttendancePage() {
                       </button>
                     </header>
                     <div className="modal-body attendance-modal-grid">
-                      <div className="attendance-detail-item">
-                        <span className="attendance-detail-label">Clock In</span>
-                        <span className="attendance-detail-value">{formatDateTime(selectedMember.time_in_at)}</span>
-                      </div>
-                      <div className="attendance-detail-item">
-                        <span className="attendance-detail-label">Clock Out</span>
-                        <span className="attendance-detail-value">{formatDateTime(selectedMember.time_out_at)}</span>
-                      </div>
-                      <div className="attendance-detail-item">
-                        <span className="attendance-detail-label">Status</span>
-                        <span className="attendance-detail-value">{selectedMember.attendance_tag ?? "Pending"}</span>
-                      </div>
                       <div className="attendance-detail-item attendance-detail-note">
                         <span className="attendance-detail-label">Attendance History</span>
                         {Array.isArray(selectedMember.attendance_history) && selectedMember.attendance_history.length > 0 ? (
