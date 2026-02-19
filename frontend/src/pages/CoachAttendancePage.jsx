@@ -11,8 +11,6 @@ const formatDateTime = value => {
   return date.toLocaleString();
 };
 
-const formatMonthTitle = monthLabel => monthLabel || "Unknown month";
-
 const formatSchedule = schedule => {
   if (!schedule) return "No schedule configured yet.";
 
@@ -119,6 +117,10 @@ export default function CoachAttendancePage() {
       }))
       .filter(monthHistory => monthHistory.entries.length > 0);
   }, [historyDateFilter, selectedMember]);
+
+  const attendanceHistoryEntries = useMemo(() => (
+    filteredAttendanceHistory.flatMap(monthHistory => monthHistory.entries ?? [])
+  ), [filteredAttendanceHistory]);
 
   const handleLogout = async () => {
     try {
@@ -284,24 +286,35 @@ export default function CoachAttendancePage() {
                                 onChange={event => setHistoryDateFilter(event.target.value)}
                               />
                             </label>
-                            <div className="attendance-history-list">
-                            {filteredAttendanceHistory.map(monthHistory => (
-                              <div key={monthHistory.month} className="attendance-history-month">
-                                <div className="attendance-history-month-title">{formatMonthTitle(monthHistory.month)}</div>
-                                <div className="attendance-history-entries">
-                                  {monthHistory.entries.map((entry, index) => (
-                                    <div key={`${monthHistory.month}-${entry.time_in_at ?? index}`} className="attendance-history-entry">
-                                      <div><strong>Clock In:</strong> {formatDateTime(entry.time_in_at)}</div>
-                                      <div><strong>Clock Out:</strong> {formatDateTime(entry.time_out_at)}</div>
-                                      <div><strong>Status:</strong> {entry.tag ?? "Pending"}</div>
-                                      <div><strong>Note:</strong> {entry.note ?? "—"}</div>
-                                    </div>
-                                  ))}
+                            {attendanceHistoryEntries.length > 0 && (
+                              <div className="employee-attendance-history-table" role="table" aria-label="Attendance history">
+                                <div className="employee-attendance-history-header" role="row">
+                                  <span role="columnheader">Date</span>
+                                  <span role="columnheader">Cluster</span>
+                                  <span role="columnheader">Time In</span>
+                                  <span role="columnheader">Time Out</span>
+                                  <span role="columnheader">Tag</span>
                                 </div>
+                                {attendanceHistoryEntries.map((entry, index) => (
+                                  <div
+                                    key={`${entry.time_in_at ?? entry.time_out_at ?? "history"}-${index}`}
+                                    className="employee-attendance-history-row"
+                                    role="row"
+                                  >
+                                    <span role="cell">{formatDateTime(entry.time_in_at ?? entry.time_out_at)}</span>
+                                    <span role="cell">{activeCluster?.name ?? "—"}</span>
+                                    <span role="cell">{formatDateTime(entry.time_in_at)}</span>
+                                    <span role="cell">{formatDateTime(entry.time_out_at)}</span>
+                                    <span role="cell">
+                                      <span className={`member-status-tag ${entry.tag ? "is-active" : ""}`}>
+                                        {entry.tag ?? "Pending"}
+                                      </span>
+                                    </span>
+                                  </div>
+                                ))}
                               </div>
-                            ))}
-                          </div>
-                            {filteredAttendanceHistory.length === 0 && (
+                            )}
+                            {attendanceHistoryEntries.length === 0 && (
                               <span className="attendance-detail-value">No attendance records match the selected date.</span>
                             )}
                           </>
