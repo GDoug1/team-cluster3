@@ -238,6 +238,7 @@ export default function EmployeeDashboard() {
   };
 
   const handleTimeIn = async () => {
+    if (!hasTeamCluster) return;
     if (attendanceLog.timeInAt && !attendanceLog.timeOutAt) return;
 
     const now = new Date();
@@ -274,6 +275,7 @@ export default function EmployeeDashboard() {
   };
 
   const handleTimeOut = async () => {
+    if (!hasTeamCluster) return;
     if (!attendanceLog.timeInAt || attendanceLog.timeOutAt) return;
 
     const nextAttendance = {
@@ -308,8 +310,9 @@ export default function EmployeeDashboard() {
   const currentStatus = getCurrentStatus();
   const activeAttendanceTag = attendanceLog.tag ?? getStatusTag(currentStatus.label);
   const hasActiveTimeIn = Boolean(attendanceLog.timeInAt && !attendanceLog.timeOutAt);
-  const canClickTimeIn = !hasActiveTimeIn;
-  const canClickTimeOut = hasActiveTimeIn;
+  const hasTeamCluster = Boolean(activeCluster?.cluster_id);
+  const canClickTimeIn = hasTeamCluster && !hasActiveTimeIn;
+  const canClickTimeOut = hasTeamCluster && hasActiveTimeIn;
 
   useEffect(() => {
     apiFetch("api/employee_clusters.php").then(response => {
@@ -390,6 +393,11 @@ export default function EmployeeDashboard() {
                 <p className="employee-attendance-copy">
                   This control marks your status as <strong>On Time</strong> when you time in on schedule or within 15 minutes after start time.
                 </p>
+                {!hasTeamCluster && (
+                  <p className="employee-attendance-copy">
+                    You need to be assigned to a team cluster before you can time in or time out.
+                  </p>
+                )}
                 <div className="employee-attendance-actions">
                   <button type="button" className="btn primary" onClick={handleTimeIn} disabled={!canClickTimeIn}>
                     Time In
