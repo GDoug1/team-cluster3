@@ -267,7 +267,7 @@ export default function EmployeeDashboard() {
   };
 
   const handleTimeIn = async () => {
-    if (!hasTeamCluster) return;
+    if (!canUseAttendanceControls) return;
     if (attendanceLog.timeInAt && !attendanceLog.timeOutAt) return;
 
     const now = new Date();
@@ -304,7 +304,7 @@ export default function EmployeeDashboard() {
   };
 
   const handleTimeOut = async () => {
-    if (!hasTeamCluster) return;
+    if (!canUseAttendanceControls) return;
     if (!attendanceLog.timeInAt || attendanceLog.timeOutAt) return;
 
     const nextAttendance = {
@@ -336,12 +336,14 @@ export default function EmployeeDashboard() {
 
   const scheduleDays = getActiveDays(activeCluster?.schedule);
   const dayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const hasScheduleToday = Boolean(getTodaySchedule());
   const currentStatus = getCurrentStatus();
   const activeAttendanceTag = attendanceLog.tag ?? getStatusTag(currentStatus.label);
   const hasActiveTimeIn = Boolean(attendanceLog.timeInAt && !attendanceLog.timeOutAt);
   const hasTeamCluster = Boolean(activeCluster?.cluster_id);
-  const canClickTimeIn = hasTeamCluster && !hasActiveTimeIn;
-  const canClickTimeOut = hasTeamCluster && hasActiveTimeIn;
+  const canUseAttendanceControls = hasTeamCluster && hasScheduleToday;
+  const canClickTimeIn = canUseAttendanceControls && !hasActiveTimeIn;
+  const canClickTimeOut = canUseAttendanceControls && hasActiveTimeIn;
 
   useEffect(() => {
     apiFetch("api/employee_clusters.php").then(response => {
@@ -449,6 +451,11 @@ export default function EmployeeDashboard() {
                 {!hasTeamCluster && (
                   <p className="employee-attendance-copy">
                     You need to be assigned to a team cluster before you can time in or time out.
+                  </p>
+                )}
+                {hasTeamCluster && !hasScheduleToday && (
+                  <p className="employee-attendance-copy">
+                    You can only time in and time out on days when you have an assigned schedule.
                   </p>
                 )}
                 <div className="employee-attendance-actions">
