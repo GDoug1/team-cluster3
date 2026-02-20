@@ -22,6 +22,14 @@ export default function CoachAttendancePage() {
   const [historyDateStartFilter, setHistoryDateStartFilter] = useState("");
   const [historyDateEndFilter, setHistoryDateEndFilter] = useState("");
   const [selectedMember, setSelectedMember] = useState(null);
+  const [editForm, setEditForm] = useState({
+    timeInAt: "",
+    timeOutAt: "",
+    tag: "",
+    note: "",
+  });
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveFeedback, setSaveFeedback] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -34,6 +42,25 @@ export default function CoachAttendancePage() {
     const month = `${date.getMonth() + 1}`.padStart(2, "0");
     const day = `${date.getDate()}`.padStart(2, "0");
     return `${year}-${month}-${day}`;
+  };
+
+  const toDateTimeLocalValue = value => {
+    if (!value) return "";
+    const parsedValue = typeof value === "string" ? value.replace(" ", "T") : value;
+    const date = new Date(parsedValue);
+    if (Number.isNaN(date.getTime())) return "";
+
+    const year = date.getFullYear();
+    const month = `${date.getMonth() + 1}`.padStart(2, "0");
+    const day = `${date.getDate()}`.padStart(2, "0");
+    const hours = `${date.getHours()}`.padStart(2, "0");
+    const minutes = `${date.getMinutes()}`.padStart(2, "0");
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
+  const toSqlDateTimeValue = value => {
+    if (!value) return null;
+    return `${value.replace("T", " ")}:00`;
   };
 
   useEffect(() => {
@@ -228,6 +255,13 @@ export default function CoachAttendancePage() {
                       className="table-row attendance-row-button"
                       onClick={() => {
                         setSelectedMember(member);
+                        setEditForm({
+                          timeInAt: toDateTimeLocalValue(member.time_in_at),
+                          timeOutAt: toDateTimeLocalValue(member.time_out_at),
+                          tag: member.attendance_tag ?? "",
+                          note: member.attendance_note ?? "",
+                        });
+                        setSaveFeedback("");
                         setHistoryDateStartFilter("");
                         setHistoryDateEndFilter("");
                       }}
@@ -244,6 +278,7 @@ export default function CoachAttendancePage() {
               {selectedMember && (
                 <div className="modal-overlay" role="presentation" onClick={() => {
                         setSelectedMember(null);
+                        setSaveFeedback("");
                         setHistoryDateStartFilter("");
                         setHistoryDateEndFilter("");
                       }}>
@@ -255,6 +290,7 @@ export default function CoachAttendancePage() {
                       </div>
                       <button type="button" className="btn secondary" onClick={() => {
                         setSelectedMember(null);
+                        setSaveFeedback("");
                         setHistoryDateStartFilter("");
                         setHistoryDateEndFilter("");
                       }}>
@@ -262,6 +298,94 @@ export default function CoachAttendancePage() {
                       </button>
                     </header>
                     <div className="modal-body attendance-modal-grid">
+                      <div className="attendance-detail-item attendance-detail-note">
+                        <span className="attendance-detail-label">Edit Latest Attendance</span>
+                        <div className="attendance-history-range-filter" role="group" aria-label="Edit latest attendance values">
+                          <label className="attendance-history-filter" htmlFor="coach-attendance-time-in">
+                            <span>Time In</span>
+                            <input
+                              id="coach-attendance-time-in"
+                              type="datetime-local"
+                              value={editForm.timeInAt}
+                              onChange={event => setEditForm(current => ({ ...current, timeInAt: event.target.value }))}
+                            />
+                          </label>
+                          <label className="attendance-history-filter" htmlFor="coach-attendance-time-out">
+                            <span>Time Out</span>
+                            <input
+                              id="coach-attendance-time-out"
+                              type="datetime-local"
+                              value={editForm.timeOutAt}
+                              onChange={event => setEditForm(current => ({ ...current, timeOutAt: event.target.value }))}
+                            />
+                          </label>
+                          <label className="attendance-history-filter" htmlFor="coach-attendance-tag">
+                            <span>Tag</span>
+                            <input
+                              id="coach-attendance-tag"
+                              type="text"
+                              value={editForm.tag}
+                              onChange={event => setEditForm(current => ({ ...current, tag: event.target.value }))}
+                            />
+                          </label>
+                          <label className="attendance-history-filter" htmlFor="coach-attendance-note">
+                            <span>Note</span>
+                            <input
+                              id="coach-attendance-note"
+                              type="text"
+                              value={editForm.note}
+                              onChange={event => setEditForm(current => ({ ...current, note: event.target.value }))}
+                            />
+                          </label>
+                        </div>
+                        <div>
+                          <button
+                            type="button"
+                            className="btn"
+                            disabled={isSaving}
+                            onClick={async () => {
+                              if (!activeCluster) return;
+
+                              setIsSaving(true);
+                              setSaveFeedback("");
+                              try {
+                                await apiFetch("api/coach_update_attendance.php", {
+                                  method: "POST",
+                                  body: JSON.stringify({
+                                    cluster_id: activeCluster.id,
+                                    employee_id: selectedMember.id,
+                                    timeInAt: toSqlDateTimeValue(editForm.timeInAt),
+                                    timeOutAt: toSqlDateTimeValue(editForm.timeOutAt),
+                                    tag: editForm.tag.trim() || null,
+                                    note: editForm.note,
+                                  }),
+                                });
+
+                                const refreshedMembers = await apiFetch(`api/manage_members.php?cluster_id=${activeCluster.id}`);
+                                setAttendanceRows(refreshedMembers);
+                                const refreshedMember = refreshedMembers.find(member => Number(member.id) === Number(selectedMember.id));
+                                if (refreshedMember) {
+                                  setSelectedMember(refreshedMember);
+                                  setEditForm({
+                                    timeInAt: toDateTimeLocalValue(refreshedMember.time_in_at),
+                                    timeOutAt: toDateTimeLocalValue(refreshedMember.time_out_at),
+                                    tag: refreshedMember.attendance_tag ?? "",
+                                    note: refreshedMember.attendance_note ?? "",
+                                  });
+                                }
+                                setSaveFeedback("Attendance updated successfully.");
+                              } catch (saveError) {
+                                setSaveFeedback(saveError?.error ?? "Unable to update attendance.");
+                              } finally {
+                                setIsSaving(false);
+                              }
+                            }}
+                          >
+                            {isSaving ? "Saving..." : "Save Attendance"}
+                          </button>
+                        </div>
+                        {saveFeedback && <span className="attendance-detail-value">{saveFeedback}</span>}
+                      </div>
                       <div className="attendance-detail-item attendance-detail-note">
                         <span className="attendance-detail-label">Attendance History</span>
                         {Array.isArray(selectedMember.attendance_history) && selectedMember.attendance_history.length > 0 ? (
