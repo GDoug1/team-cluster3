@@ -1285,7 +1285,17 @@ useEffect(() => {
               </div>
               <div className="modal-body">
                 <div className="schedule-card">
-                  <div className="schedule-label">Schedule Details</div>
+                  <div className="schedule-heading">
+                    <div className="schedule-label">Schedule Details</div>
+                    <p className="schedule-helper-text">
+                      Turn days on or off, then update the work shift, lunch, and break windows.
+                    </p>
+                  </div>
+                  <div className="schedule-legend" aria-hidden="true">
+                    <span className="schedule-legend-chip schedule-legend-shift">Shift window</span>
+                    <span className="schedule-legend-chip schedule-legend-lunch">Lunch break</span>
+                    <span className="schedule-legend-chip schedule-legend-break">Short break</span>
+                  </div>
                   <div className="schedule-day-grid">
                     {dayOptions.map(day => {
                       const isWorkingDay = scheduleForm.days.includes(day);
@@ -1315,14 +1325,23 @@ useEffect(() => {
 
                       return (
                         <div key={day} className="schedule-day-row">
-                          <label className="schedule-day-toggle">
-                            <input
-                              type="checkbox"
-                              checked={isWorkingDay}
-                              onChange={() => handleToggleDay(day)}
-                            />
-                            <span>{day}</span>
-                          </label>
+                          <div className="schedule-day-header">
+                            <label className="schedule-day-toggle">
+                              <input
+                                type="checkbox"
+                                checked={isWorkingDay}
+                                onChange={() => handleToggleDay(day)}
+                              />
+                              <span>{day}</span>
+                            </label>
+                            <span
+                              className={`schedule-day-status ${
+                                isWorkingDay ? "is-working" : "is-off"
+                              }`}
+                            >
+                              {isWorkingDay ? "Working day" : "Off day"}
+                            </span>
+                          </div>
                           {isWorkingDay ? (
                             <div className="schedule-time-grid">
                               <div className="schedule-time-label">Start time</div>

@@ -1051,10 +1051,16 @@ body {
 
 .schedule-card {
   display: grid;
-  gap: 8px;
+  gap: 14px;
   border: 1px solid #dbe3ee;
   border-radius: 14px;
-  padding: 16px;
+  padding: 18px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.schedule-heading {
+  display: grid;
+  gap: 4px;
 }
 
 .schedule-day-grid {
@@ -1062,17 +1068,65 @@ body {
 
 }
 
+.schedule-helper-text {
+  margin: 0;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.schedule-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.schedule-legend-chip {
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 6px 10px;
+  border: 1px solid transparent;
+}
+
+.schedule-legend-shift {
+  color: #1d4ed8;
+  background: #dbeafe;
+  border-color: #bfdbfe;
+}
+
+.schedule-legend-lunch {
+  color: #1e3a8a;
+  background: #e0e7ff;
+  border-color: #c7d2fe;
+}
+
+.schedule-legend-break {
+  color: #6d28d9;
+  background: #ede9fe;
+  border-color: #ddd6fe;
+}
+
 .schedule-day-row {
   display: grid;
   grid-template-columns: minmax(110px, 0.35fr) 1fr;
   align-items: center;
   gap: 14px;
-  padding: 10px 0;
+  padding: 12px;
   border-bottom: 1px solid #edf2f7;
+  border-radius: 12px;
 }
 
 .schedule-day-row:last-child {
   border-bottom: none;
+}
+
+.schedule-day-row:hover {
+  background: #f8fafc;
+}
+
+.schedule-day-header {
+  display: grid;
+  gap: 8px;
 }
 
 .schedule-day-toggle {
@@ -1087,6 +1141,25 @@ body {
   width: 20px;
   height: 20px;
   accent-color: #2563eb;
+}
+
+.schedule-day-status {
+  display: inline-flex;
+  width: fit-content;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+
+.schedule-day-status.is-working {
+  color: #166534;
+  background: #dcfce7;
+}
+
+.schedule-day-status.is-off {
+  color: #475569;
+  background: #e2e8f0;
 }
 
 .schedule-time-grid {
@@ -1131,11 +1204,11 @@ body {
 }
 
 .schedule-time-grid select.schedule-break-select {
-  background-color: #eff6ff;
+  background-color: #e8f0fe;
 }
 
 .schedule-time-grid select.schedule-break-select1 {
-  background-color: #f3efff;
+  background-color: #f2ebff;
 }
 
 .schedule-time-grid select:hover {
@@ -1157,6 +1230,9 @@ body {
   .schedule-day-row {
     grid-template-columns: 1fr;
     gap: 8px;
+    padding: 10px 0;
+    border-radius: 0;
+    background: transparent;
   }
 
   .schedule-time-grid {
