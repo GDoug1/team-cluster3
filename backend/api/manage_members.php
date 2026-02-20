@@ -37,7 +37,8 @@ while ($m = $res->fetch_assoc()) {
 }
 
 $historyRes = $conn->query(
-    "SELECT employee_id,
+    "SELECT id,
+            employee_id,
             DATE_FORMAT(COALESCE(time_in_at, time_out_at, updated_at), '%Y-%m') AS month_key,
             DATE_FORMAT(COALESCE(time_in_at, time_out_at, updated_at), '%M %Y') AS month_label,
             time_in_at,
@@ -65,6 +66,7 @@ while ($history = $historyRes->fetch_assoc()) {
     }
 
     $historyByEmployee[$employeeId][$monthKey]["entries"][] = [
+        "id" => (int)$history["id"],    
         "time_in_at" => $history["time_in_at"],
         "time_out_at" => $history["time_out_at"],
         "tag" => $history["tag"],

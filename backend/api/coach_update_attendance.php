@@ -11,8 +11,9 @@ $timeInAt = isset($data["timeInAt"]) ? $data["timeInAt"] : null;
 $timeOutAt = isset($data["timeOutAt"]) ? $data["timeOutAt"] : null;
 $tag = isset($data["tag"]) ? $data["tag"] : null;
 $note = isset($data["note"]) ? $data["note"] : "";
+$attendanceId = isset($data["attendance_id"]) ? (int)$data["attendance_id"] : 0;
 
-if ($cluster_id <= 0 || $employee_id <= 0) {
+if ($cluster_id <= 0 || $employee_id <= 0 || $attendanceId <= 0) {
     http_response_code(400);
     echo json_encode(["error" => "Invalid request."]);
     exit;
@@ -65,32 +66,29 @@ $timeOutValue = $timeOutSql ? "'" . $conn->real_escape_string($timeOutSql) . "'"
 $tagValue = ($tag !== null && $tag !== "") ? "'" . $conn->real_escape_string($tag) . "'" : "NULL";
 $noteValue = "'" . $conn->real_escape_string($note) . "'";
 
-$latestAttendance = $conn->query(
+$attendanceCheck = $conn->query(
     "SELECT id
      FROM attendance_logs
-     WHERE cluster_id=$cluster_id AND employee_id=$employee_id
-     ORDER BY COALESCE(time_in_at, time_out_at, updated_at) DESC, id DESC
+     WHERE id=$attendanceId
+       AND cluster_id=$cluster_id
+       AND employee_id=$employee_id
      LIMIT 1"
 );
 
-if ($latestAttendance && $latestAttendance->num_rows > 0) {
-    $attendance = $latestAttendance->fetch_assoc();
-    $attendanceId = (int)$attendance["id"];
-
-    $conn->query(
-        "UPDATE attendance_logs
-         SET time_in_at=$timeInValue,
-             time_out_at=$timeOutValue,
-             tag=$tagValue,
-             note=$noteValue
-         WHERE id=$attendanceId"
-    );
-} else {
-    $conn->query(
-        "INSERT INTO attendance_logs (cluster_id, employee_id, time_in_at, time_out_at, tag, note)
-         VALUES ($cluster_id, $employee_id, $timeInValue, $timeOutValue, $tagValue, $noteValue)"
-    );
+if (!$attendanceCheck || $attendanceCheck->num_rows === 0) {
+    http_response_code(404);
+    echo json_encode(["error" => "Attendance record not found for this employee."]);
+    exit;
 }
+
+$conn->query(
+    "UPDATE attendance_logs
+     SET time_in_at=$timeInValue,
+         time_out_at=$timeOutValue,
+         tag=$tagValue,
+         note=$noteValue
+     WHERE id=$attendanceId"
+);
 
 echo json_encode([
     "success" => true,

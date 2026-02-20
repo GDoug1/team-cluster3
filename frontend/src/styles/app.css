@@ -1660,3 +1660,25 @@ body {
   border-top: 1px solid #e5e7eb;
   color: #1f2937;
 }
+.attendance-edit-modal {
+  width: min(640px, 94vw);
+}
+
+.attendance-tag-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.attendance-tag-edit-button {
+  padding: 4px 10px;
+  font-size: 11px;
+}
+
+.attendance-edit-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
