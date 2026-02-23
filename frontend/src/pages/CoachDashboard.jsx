@@ -82,11 +82,11 @@ export default function CoachDashboard() {
       daySchedules[day] = {
         startTime: baseSchedule.startTime ?? "9:00",
         startPeriod: baseSchedule.startPeriod ?? "AM",
-        endTime: baseSchedule.endTime ?? "5:00",
+        endTime: baseSchedule.endTime ?? "6:00",
         endPeriod: baseSchedule.endPeriod ?? "PM",
         lunchBreakStartTime: baseSchedule.lunchBreakStartTime ?? baseSchedule.lunchBreakTime ?? "12:00",
         lunchBreakStartPeriod: baseSchedule.lunchBreakStartPeriod ?? baseSchedule.lunchBreakPeriod ?? "PM",
-        lunchBreakEndTime: baseSchedule.lunchBreakEndTime ?? "12:30",
+        lunchBreakEndTime: baseSchedule.lunchBreakEndTime ?? "1:00",
         lunchBreakEndPeriod: baseSchedule.lunchBreakEndPeriod ?? "PM",
         breakStartTime: baseSchedule.breakStartTime ?? baseSchedule.breakTime ?? "3:00",
         breakStartPeriod: baseSchedule.breakStartPeriod ?? baseSchedule.breakPeriod ?? "PM",
@@ -1304,11 +1304,6 @@ useEffect(() => {
                     <p className="schedule-helper-text">
                       Turn days on or off, then update the work shift, lunch, and break windows.
                     </p>
-                  </div>
-                  <div className="schedule-legend" aria-hidden="true">
-                    <span className="schedule-legend-chip schedule-legend-shift">Shift window</span>
-                    <span className="schedule-legend-chip schedule-legend-lunch">Lunch break</span>
-                    <span className="schedule-legend-chip schedule-legend-break">Short break</span>
                   </div>
                   <div className="schedule-day-grid">
                     {dayOptions.map(day => {

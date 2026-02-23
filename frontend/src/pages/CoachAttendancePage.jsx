@@ -467,7 +467,7 @@ export default function CoachAttendancePage() {
                             id="coach-attendance-tag"
                             value={editForm.tag}
                             onChange={event => setEditForm(current => ({ ...current, tag: event.target.value }))}
-                        >
+                          >
                             <option value="">Select tag</option>
                             {attendanceTagOptions.map(tag => (
                               <option key={tag} value={tag}>{tag}</option>
