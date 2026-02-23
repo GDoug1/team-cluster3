@@ -1183,12 +1183,22 @@ useEffect(() => {
                 <p className="modal-text">
                   Add or update members for this team cluster.
                 </p>
+                <div className="manage-team-summary">
+                  <div className="summary-pill">
+                    <span className="summary-label">Team members</span>
+                    <span className="summary-value">{members.length}</span>
+                  </div>
+                  <div className="summary-pill summary-pill-muted">
+                    <span className="summary-label">Available employees</span>
+                    <span className="summary-value">{availableEmployees.length}</span>
+                  </div>
+                </div>
                 {memberLoading ? (
                   <div className="modal-text">Loading members...</div>
                 ) : (
-                  <div className="member-list">
+                  <div className="member-list manage-team-list">
                     {members.length === 0 && (
-                      <div className="modal-text">No members assigned yet.</div>
+                      <div className="empty-surface">No members assigned yet.</div>
                     )}
                     {members.length > 0 && (
                       <div className="member-header">
@@ -1246,7 +1256,7 @@ useEffect(() => {
                     onClick={() => setShowMemberForm(prev => !prev)}
                     disabled={employeeLoading || availableEmployees.length === 0}
                   >
-                    + Add Member
+                    {showMemberForm ? "Hide add member form" : "+ Add Member"}
                   </button>
                   {employeeLoading && (
                     <span className="modal-text">Loading employees...</span>
@@ -1261,7 +1271,8 @@ useEffect(() => {
                 </div>
                 {employeeError && <div className="error">{employeeError}</div>}
                 {showMemberForm && availableEmployees.length > 0 && (
-                  <div className="member-form">
+                 <div className="member-form manage-team-form-card">
+                    <div className="member-form-title">Add a new teammate</div>
                     <label className="form-field">
                       <span>Search employee</span>
                       <input
@@ -1296,7 +1307,7 @@ useEffect(() => {
                       onClick={handleAddMember}
                       disabled={!selectedEmployee || isAddingMember}
                     >
-                      {isAddingMember ? "Adding..." : "Confirm"}
+                      {isAddingMember ? "Adding..." : "Confirm member"}
                     </button>
                   </div>
                 )}
