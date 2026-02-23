@@ -1168,7 +1168,7 @@ useEffect(() => {
                 <div>
                   <div className="modal-title">Manage Team</div>
                   <div className="modal-subtitle">
-                    {activeCluster.name}
+                    Cluster Name: {activeCluster.name}
                   </div>
                 </div>
                 <button
