@@ -50,6 +50,7 @@ export default function CoachDashboard() {
   const [activeMembersLoading, setActiveMembersLoading] = useState(false);
   const [activeMembersError, setActiveMembersError] = useState("");
   const [activeMemberTagFilter, setActiveMemberTagFilter] = useState("all");
+  const [confirmState, setConfirmState] = useState(null);
   const [scheduleForm, setScheduleForm] = useState({
     days: ["Mon", "Tue", "Wed", "Thu", "Fri"],
     daySchedules: {
@@ -508,29 +509,32 @@ useEffect(() => {
 
   const handleDisbandCluster = async cluster => {
     if (!cluster || isDisbanding) return;
-    const confirmed = window.confirm(
-      `Disband ${cluster.name}? This will remove all members and schedules.`
-    );
-    if (!confirmed) return;
+    setConfirmState({
+      title: "Disband cluster?",
+      message: `Disband ${cluster.name}? This will remove all members and schedules.`,
+      confirmLabel: "Disband",
+      variant: "danger",
+      onConfirm: async () => {
+        setIsDisbanding(true);
+        setError("");
 
-    setIsDisbanding(true);
-    setError("");
-
-    try {
-      await apiFetch("api/disband_cluster.php", {
-        method: "POST",
-        body: JSON.stringify({ cluster_id: cluster.id })
-      });
-      setClusters(prev => prev.filter(item => item.id !== cluster.id));
-      if (activeCluster?.id === cluster.id) {
-        handleCloseModal();
+        try {
+          await apiFetch("api/disband_cluster.php", {
+            method: "POST",
+            body: JSON.stringify({ cluster_id: cluster.id })
+          });
+          setClusters(prev => prev.filter(item => item.id !== cluster.id));
+          if (activeCluster?.id === cluster.id) {
+            handleCloseModal();
+          }
+          setShowForm(false);
+        } catch (err) {
+          setError(err?.error ?? "Unable to disband cluster.");
+        } finally {
+          setIsDisbanding(false);
+        }
       }
-      setShowForm(false);
-    } catch (err) {
-      setError(err?.error ?? "Unable to disband cluster.");
-    } finally {
-      setIsDisbanding(false);
-    }
+    });
   };
 
   const handleCloseModal = () => {
@@ -852,40 +856,50 @@ useEffect(() => {
 
   const handleDeleteMember = async member => {
     if (!member || !activeCluster || isDeletingMember) return;
-    const confirmed = window.confirm(
-      `Remove ${member.fullname} from ${activeCluster.name}?`
-    );
-    if (!confirmed) return;
-    setIsDeletingMember(true);
-    setMemberError("");
+    setConfirmState({
+      title: "Remove member?",
+      message: `Remove ${member.fullname} from ${activeCluster.name}?`,
+      confirmLabel: "Remove",
+      variant: "danger",
+      onConfirm: async () => {
+        setIsDeletingMember(true);
+        setMemberError("");
 
-    try {
-      await apiFetch("api/delete_member.php", {
-        method: "POST",
-        body: JSON.stringify({
-          cluster_id: activeCluster.id,
-          employee_id: member.id
-        })
-      });
+        try {
+          await apiFetch("api/delete_member.php", {
+            method: "POST",
+            body: JSON.stringify({
+              cluster_id: activeCluster.id,
+              employee_id: member.id
+            })
+          });
 
-      setMembers(prev => prev.filter(item => item.id !== member.id));
-      setActiveMembers(prev => prev.filter(item => item.id !== member.id));
-      setAvailableEmployees(prev => [...prev, { id: member.id, fullname: member.fullname }]);
-      setClusters(prev =>
-        prev.map(cluster =>
-          cluster.id === activeCluster.id
-            ? {
-                ...cluster,
-                members: Math.max(Number(cluster.members ?? 1) - 1, 0)
-              }
-            : cluster
-        )
-      );
-    } catch (err) {
-      setMemberError(err?.error ?? "Unable to remove member.");
-    } finally {
-      setIsDeletingMember(false);
-    }
+          setMembers(prev => prev.filter(item => item.id !== member.id));
+          setActiveMembers(prev => prev.filter(item => item.id !== member.id));
+          setAvailableEmployees(prev => [...prev, { id: member.id, fullname: member.fullname }]);
+          setClusters(prev =>
+            prev.map(cluster =>
+              cluster.id === activeCluster.id
+                ? {
+                    ...cluster,
+                    members: Math.max(Number(cluster.members ?? 1) - 1, 0)
+                  }
+                : cluster
+            )
+          );
+        } catch (err) {
+          setMemberError(err?.error ?? "Unable to remove member.");
+        } finally {
+          setIsDeletingMember(false);
+        }
+      }
+    });
+  };
+
+      const handleConfirmAction = async () => {
+    if (!confirmState?.onConfirm) return;
+    await confirmState.onConfirm();
+    setConfirmState(null);
   };
 
   return (
@@ -1495,6 +1509,35 @@ useEffect(() => {
                     {isSavingSchedule ? "Saving..." : "Save Schedule"}
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {confirmState && (
+          <div className="modal-overlay" role="dialog" aria-modal="true" aria-label={confirmState.title}>
+            <div className="modal-card confirm-modal-card">
+              <div>
+                <h3 className="confirm-modal-title">{confirmState.title}</h3>
+                <p className="confirm-modal-message">{confirmState.message}</p>
+              </div>
+              <div className="confirm-modal-actions">
+                <button
+                  className="btn confirm-cancel-btn"
+                  type="button"
+                  onClick={() => setConfirmState(null)}
+                  disabled={isDeletingMember || isDisbanding}
+                >
+                  Cancel
+                </button>
+                <button
+                  className={`btn ${confirmState.variant === "danger" ? "confirm-danger-btn" : "primary"}`}
+                  type="button"
+                  onClick={handleConfirmAction}
+                  disabled={isDeletingMember || isDisbanding}
+                >
+                  {confirmState.confirmLabel}
+                </button>
               </div>
             </div>
           </div>
