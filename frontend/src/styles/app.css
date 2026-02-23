@@ -273,6 +273,7 @@ body {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
+  margin-right: 50pxgi;
 }
 
 .card-details {
@@ -1341,10 +1342,43 @@ body {
   color: #475569;
 }
 
+.schedule-time-label-g1 {
+  font-size: 12px;
+  font-weight: 700;
+  color: #475569;
+  margin-left: 50px;
+}
+
+.schedule-time-label-g2 {
+  font-size: 12px;
+  font-weight: 700;
+  color: #475569;
+  margin-left: 50px;
+}
+
+.schedule-time-group1 {
+  margin-left: 50px;
+}
+
+
 .schedule-time-row {
   display: grid;
   grid-template-columns: 1fr;
   gap: 2px;
+}
+
+.schedule-time-row-g1 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2px;
+  margin-left: 50px;
+}
+
+.schedule-time-row-g2 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2px;
+  margin-left: 50px;
 }
 
 .schedule-time-row.schedule-start-time {
@@ -1371,10 +1405,14 @@ body {
 
 .schedule-time-grid select.schedule-break-select {
   background-color: #e8f0fe;
+  max-width: 170px;
+  justify-self: start;
 }
 
 .schedule-time-grid select.schedule-break-select1 {
   background-color: #f2ebff;
+  max-width: 170px;
+  justify-self: start;
 }
 
 .schedule-time-grid select:hover {
