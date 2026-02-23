@@ -900,8 +900,8 @@ body {
   grid-template-columns: minmax(140px, 1fr) minmax(180px, 1.25fr) minmax(180px, 1fr) minmax(150px, 0.8fr);
   align-items: center;
   gap: 14px;
-  font-size: 15px;
-  color: #939393;
+  font-size: 14px;
+  color: #808080;
   font-weight: 450;
   border-radius: 5px;
   background-color: #eaeaea;
