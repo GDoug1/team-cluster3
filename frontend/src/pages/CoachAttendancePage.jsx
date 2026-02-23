@@ -11,6 +11,8 @@ const formatDateTime = value => {
   return date.toLocaleString();
 };
 
+const attendanceTagOptions = ["On Time", "Late", "Pending"];
+
 export default function CoachAttendancePage() {
   const navigate = useNavigate();
   const { user } = useCurrentUser();
@@ -461,12 +463,16 @@ export default function CoachAttendancePage() {
                         </label>
                         <label className="attendance-history-filter" htmlFor="coach-attendance-tag">
                           <span>Tag</span>
-                          <input
+                          <select
                             id="coach-attendance-tag"
-                            type="text"
                             value={editForm.tag}
                             onChange={event => setEditForm(current => ({ ...current, tag: event.target.value }))}
-                          />
+                        >
+                            <option value="">Select tag</option>
+                            {attendanceTagOptions.map(tag => (
+                              <option key={tag} value={tag}>{tag}</option>
+                            ))}
+                          </select>
                         </label>
                         <label className="attendance-history-filter" htmlFor="coach-attendance-note">
                           <span>Note</span>
