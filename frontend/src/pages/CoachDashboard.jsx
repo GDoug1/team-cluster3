@@ -1272,37 +1272,46 @@ useEffect(() => {
                 {employeeError && <div className="error">{employeeError}</div>}
                 {showMemberForm && availableEmployees.length > 0 && (
                  <div className="member-form manage-team-form-card">
-                    <div className="member-form-title">Add a new teammate</div>
-                    <label className="form-field">
-                      <span>Search employee</span>
-                      <input
-                        type="search"
-                        className="member-search-input"
-                        value={employeeSearchQuery}
-                        onChange={event => setEmployeeSearchQuery(event.target.value)}
-                        placeholder="Type a name"
-                      />
-                    </label>
-                    <label className="form-field">
-                      <span>Select employee</span>
-                      <select
-                        className="member-select"
-                        value={selectedEmployee}
-                        onChange={event => setSelectedEmployee(event.target.value)}
-                      >
-                        <option value="">Choose a member</option>
-                        {filteredAvailableEmployees.map(employee => (
-                          <option key={employee.id} value={employee.id}>
-                            {employee.fullname}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
+                    <div className="member-form-head">
+                      <div className="member-form-title">Add a new teammate</div>
+                      <p className="member-form-subtitle">
+                        Search by name, pick the employee, then confirm to assign them.
+                      </p>
+                    </div>
+                    <div className="member-form-inputs">
+                      <label className="form-field">
+                        <span>Search employee</span>
+                        <input
+                          type="search"
+                          className="member-search-input"
+                          value={employeeSearchQuery}
+                          onChange={event => setEmployeeSearchQuery(event.target.value)}
+                          placeholder="Type a name"
+                        />
+                      </label>
+                      <label className="form-field">
+                        <span>Select employee</span>
+                        <select
+                          className="member-select"
+                          value={selectedEmployee}
+                          onChange={event => setSelectedEmployee(event.target.value)}
+                        >
+                          <option value="">Choose a member</option>
+                          {filteredAvailableEmployees.map(employee => (
+                            <option key={employee.id} value={employee.id}>
+                              {employee.fullname}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
                     {filteredAvailableEmployees.length === 0 && (
-                      <div className="modal-text">No employees match your search.</div>
+                      <div className="member-form-empty-state modal-text">
+                        No employees match your search.
+                      </div>
                     )}
                     <button
-                      className="btn secondary"
+                      className="btn secondary member-form-submit"
                       type="button"
                       onClick={handleAddMember}
                       disabled={!selectedEmployee || isAddingMember}

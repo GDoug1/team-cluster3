@@ -1033,9 +1033,22 @@ body {
 
 .member-form-title {
   margin: 0;
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 20px;
+  font-weight: 800;
   color: #0f172a;
+  letter-spacing: -0.01em;
+}
+
+.member-form-head {
+  display: grid;
+  gap: 4px;
+}
+
+.member-form-subtitle {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #64748b;
 }
 
 .manage-team-form-card {
@@ -1137,15 +1150,40 @@ body {
 
 .member-form {
   display: grid;
-  gap: 10px;
+  gap: 14px;
+}
+
+.member-form-inputs {
+  display: grid;
+  gap: 12px;
+}
+
+.member-form-empty-state {
+  padding: 10px 12px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.member-form-submit {
+  width: 100%;
 }
 
 .member-select,
 .member-search-input {
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 10px 12px;
-  font-size: 13px;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 14px;
+  background: #ffffff;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.member-select:focus,
+.member-search-input:focus {
+  outline: none;
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.14);
 }
 
 .schedule-modal {
