@@ -1012,7 +1012,8 @@ body {
   color: #334155;
 }
 
-.modal-card .member-select {
+.modal-card .member-select,
+.modal-card .member-search-input {
   border-radius: 10px;
   min-height: 44px;
 }
@@ -1067,7 +1068,8 @@ body {
   gap: 10px;
 }
 
-.member-select {
+.member-select,
+.member-search-input {
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   padding: 10px 12px;

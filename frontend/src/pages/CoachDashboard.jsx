@@ -40,6 +40,7 @@ export default function CoachDashboard() {
   const [employeeError, setEmployeeError] = useState("");
   const [showMemberForm, setShowMemberForm] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState("");
+  const [employeeSearchQuery, setEmployeeSearchQuery] = useState("");
   const [isAddingMember, setIsAddingMember] = useState(false);
   const [scheduleMember, setScheduleMember] = useState(null);
   const [scheduleError, setScheduleError] = useState("");
@@ -354,6 +355,12 @@ export default function CoachDashboard() {
     return getActiveStatusTag(member) === activeMemberTagFilter;
   });
 
+  const filteredAvailableEmployees = availableEmployees.filter(employee =>
+    employee.fullname
+      .toLowerCase()
+      .includes(employeeSearchQuery.trim().toLowerCase())
+  );
+
   useEffect(() => {
     apiFetch("api/coach_clusters.php").then(setClusters);
   }, []);
@@ -394,6 +401,7 @@ useEffect(() => {
     setEmployeeError("");
     setShowMemberForm(false);
     setSelectedEmployee("");
+    setEmployeeSearchQuery("");
 
     Promise.all([
       apiFetch(`api/manage_members.php?cluster_id=${activeCluster.id}`),
@@ -545,6 +553,9 @@ useEffect(() => {
     setEmployeeError("");
     setScheduleMember(null);
     setScheduleError("");
+    setShowMemberForm(false);
+    setSelectedEmployee("");
+    setEmployeeSearchQuery("");
   };
 
   const handleOpenSchedule = member => {
@@ -839,6 +850,7 @@ useEffect(() => {
         prev.filter(employee => employee.id !== added.id)
       );
       setSelectedEmployee("");
+      setEmployeeSearchQuery("");
       setShowMemberForm(false);
       setClusters(prev =>
         prev.map(cluster =>
@@ -1251,6 +1263,16 @@ useEffect(() => {
                 {showMemberForm && availableEmployees.length > 0 && (
                   <div className="member-form">
                     <label className="form-field">
+                      <span>Search employee</span>
+                      <input
+                        type="search"
+                        className="member-search-input"
+                        value={employeeSearchQuery}
+                        onChange={event => setEmployeeSearchQuery(event.target.value)}
+                        placeholder="Type a name"
+                      />
+                    </label>
+                    <label className="form-field">
                       <span>Select employee</span>
                       <select
                         className="member-select"
@@ -1258,13 +1280,16 @@ useEffect(() => {
                         onChange={event => setSelectedEmployee(event.target.value)}
                       >
                         <option value="">Choose a member</option>
-                        {availableEmployees.map(employee => (
+                        {filteredAvailableEmployees.map(employee => (
                           <option key={employee.id} value={employee.id}>
                             {employee.fullname}
                           </option>
                         ))}
                       </select>
                     </label>
+                    {filteredAvailableEmployees.length === 0 && (
+                      <div className="modal-text">No employees match your search.</div>
+                    )}
                     <button
                       className="btn secondary"
                       type="button"
