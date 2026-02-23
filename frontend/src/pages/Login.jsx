@@ -51,8 +51,13 @@ export default function Login() {
           <span className="auth-pill">Team Cluster</span>
           <h1>Welcome back</h1>
           <p>
-            Track teams, coaches, and employees in one secure workspace. Sign in
-            to continue managing your cluster dashboard.
+            coach@mail.com
+          </p>
+          <p>
+            employee@mail.com
+          </p>
+          <p>
+            admin@mail.com
           </p>
           <div className="auth-highlights">
             <div>

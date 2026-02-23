@@ -392,6 +392,8 @@ body {
   color: #374151;
 }
 
+
+
 .schedule-week {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
@@ -686,7 +688,7 @@ body {
   padding: 10px 14px;
   border-radius: 12px;
   border: 1px solid #bfdbfe;
-  background: linear-gradient(135deg, #9CD5FF 0%, #F7F8F0 100%);
+  background: linear-gradient(135deg, #9CD5FF 0%, #e3f1f7 100%);
 }
 
 .summary-pill-muted {
@@ -737,7 +739,7 @@ body {
   border: 1px solid #d1d5db;
   border-radius: 12px;
   overflow-x: auto;
-  overflow-y: hidden;
+  overflow-y: visible;
   background: #f8fafc;
 }
 
@@ -899,8 +901,10 @@ body {
   align-items: center;
   gap: 14px;
   font-size: 15px;
-  color: #3a64ad;
+  color: #939393;
   font-weight: 700;
+  border-radius: 5px;
+  background-color: #eaeaea;
   padding: 6px 10px;
 }
 
