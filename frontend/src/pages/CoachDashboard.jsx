@@ -29,8 +29,10 @@ export default function CoachDashboard() {
   const [clusters, setClusters] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [formValues, setFormValues] = useState({ name: "", description: "" });
+  const [editingClusterId, setEditingClusterId] = useState(null);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isReuploading, setIsReuploading] = useState(false);
   const [activeCluster, setActiveCluster] = useState(null);
   const [members, setMembers] = useState([]);
   const [memberError, setMemberError] = useState("");
@@ -485,6 +487,7 @@ useEffect(() => {
 
   const handleCancel = () => {
     setShowForm(false);
+    setEditingClusterId(null);
     setFormValues({ name: "", description: "" });
     setError("");
   };
@@ -493,25 +496,61 @@ useEffect(() => {
     setActiveCluster(cluster);
   };
 
-  const handleReuploadCluster = async cluster => {
-    if (!cluster) return;
+  const handleEditCluster = cluster => {
+    if (!cluster || cluster.status !== "rejected") return;
 
+    setShowForm(true);
+    setEditingClusterId(cluster.id);
+    setFormValues({
+      name: cluster.name ?? "",
+      description: cluster.description ?? ""
+    });
+    setError("");
+  };
+
+  const handleReuploadCluster = async cluster => {
+    if (!cluster || isReuploading) return;
+
+    const trimmedName = formValues.name.trim();
+    const trimmedDescription = formValues.description.trim();
+
+    if (!trimmedName) {
+      setError("Cluster name is required.");
+      return;
+    }
+
+    setIsReuploading(true);
     setError("");
 
     try {
       await apiFetch("api/resubmit_cluster.php", {
         method: "POST",
-        body: JSON.stringify({ cluster_id: cluster.id })
+        body: JSON.stringify({
+          cluster_id: cluster.id,
+          name: trimmedName,
+          description: trimmedDescription
+        })
       });
       setClusters(prev =>
         prev.map(item =>
           item.id === cluster.id
-            ? { ...item, status: "pending", rejection_reason: null }
+            ? {
+                ...item,
+                name: trimmedName,
+                description: trimmedDescription,
+                status: "pending",
+                rejection_reason: null
+              }
             : item
         )
       );
+      setEditingClusterId(null);
+      setShowForm(false);
+      setFormValues({ name: "", description: "" });
     } catch (err) {
       setError(err?.error ?? "Unable to re-upload cluster for review.");
+    } finally {
+      setIsReuploading(false);
     }
   };
 
@@ -958,9 +997,24 @@ useEffect(() => {
         </header>
 
         <section className="content">
-          {showForm && clusters.length === 0 && (
-            <form className="card cluster-form" onSubmit={handleSubmit}>
-              <div className="form-header">Create Team Cluster</div>
+          {showForm && (clusters.length === 0 || editingClusterId !== null) && (
+            <form
+              className="card cluster-form"
+              onSubmit={
+                editingClusterId !== null
+                  ? event => {
+                      event.preventDefault();
+                      const cluster = clusters.find(item => item.id === editingClusterId);
+                      if (cluster) {
+                        handleReuploadCluster(cluster);
+                      }
+                    }
+                  : handleSubmit
+              }
+            >
+              <div className="form-header">
+                {editingClusterId !== null ? "Edit Rejected Team Cluster" : "Create Team Cluster"}
+              </div>
               <div className="form-grid">
                 <label className="form-field">
                   <span>Cluster Name</span>
@@ -995,9 +1049,19 @@ useEffect(() => {
                 <button
                   className="btn primary"
                   type="submit"
-                  disabled={isSubmitting || !formValues.name.trim()}
+                  disabled={
+                    editingClusterId !== null
+                      ? isReuploading || !formValues.name.trim()
+                      : isSubmitting || !formValues.name.trim()
+                  }
                 >
-                  {isSubmitting ? "Creating..." : "Create"}
+                  {editingClusterId !== null
+                    ? isReuploading
+                      ? "Re-uploading..."
+                      : "Save & Re-upload"
+                    : isSubmitting
+                      ? "Creating..."
+                      : "Create"}
                 </button>
               </div>
             </form>
@@ -1043,13 +1107,25 @@ useEffect(() => {
                       Manage
                     </button>
                     {c.status === "rejected" && (
-                      <button
-                        className="btn secondary"
-                        type="button"
-                        onClick={() => handleReuploadCluster(c)}
-                      >
-                        Re-upload
-                      </button>
+                      <>
+                        <button
+                          className="btn secondary"
+                          type="button"
+                          onClick={() => handleEditCluster(c)}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          className="btn secondary"
+                          type="button"
+                          onClick={() =>
+                            editingClusterId === c.id ? handleReuploadCluster(c) : handleEditCluster(c)
+                          }
+                          disabled={isReuploading && editingClusterId === c.id}
+                        >
+                          {isReuploading && editingClusterId === c.id ? "Re-uploading..." : "Re-upload"}
+                        </button>
+                      </>
                     )}
                     <button
                       className="btn danger"
