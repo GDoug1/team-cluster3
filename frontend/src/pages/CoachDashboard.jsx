@@ -1244,7 +1244,7 @@ useEffect(() => {
                 <div>
                   <div className="modal-title">Manage Team</div>
                   <div className="modal-subtitle">
-                    {activeCluster.name}
+                    Cluster Name: {activeCluster.name}
                   </div>
                 </div>
                 <button
@@ -1407,7 +1407,7 @@ useEffect(() => {
                 <div>
                   <div className="modal-title">Manage Member Schedule</div>
                   <div className="modal-subtitle">
-                    {scheduleMember.fullname}
+                    Employee Name: {scheduleMember.fullname}
                   </div>
                 </div>
                 <button
@@ -1476,9 +1476,9 @@ useEffect(() => {
                             <div className="schedule-time-grid">
                               <div className="schedule-time-label">Start time</div>
                               <div className="schedule-time-label">End time</div>
-                              <div className="schedule-time-label">Lunch break start</div>
+                              <div className="schedule-time-label-g1">Lunch break start</div>
                               <div className="schedule-time-label">Lunch break end</div>
-                              <div className="schedule-time-label">Break time start</div>
+                              <div className="schedule-time-label-g2">Break time start</div>
                               <div className="schedule-time-label">Break time end</div>
 
                               <div className="schedule-time-row schedule-start-time">
@@ -1523,7 +1523,7 @@ useEffect(() => {
                                 </select>
                               </div>
 
-                              <div className="schedule-time-row">
+                              <div className="schedule-time-row-g1">
                                 <select
                                   className="schedule-break-select"
                                   value={`${daySchedule.lunchBreakStartTime}|${daySchedule.lunchBreakStartPeriod}`}
@@ -1561,7 +1561,7 @@ useEffect(() => {
                                 </select>
                               </div>
 
-                              <div className="schedule-time-row">
+                              <div className="schedule-time-row-g2">
                                 <select
                                   className="schedule-break-select1"
                                   value={`${daySchedule.breakStartTime}|${daySchedule.breakStartPeriod}`}
