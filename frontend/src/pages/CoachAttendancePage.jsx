@@ -13,6 +13,29 @@ const formatDateTime = value => {
 
 const attendanceTagOptions = ["On Time", "Late", "Pending"];
 
+const weekDayByIndex = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+const normalizeSchedule = schedule => {
+  if (!schedule) return null;
+  if (typeof schedule === "string") {
+    try {
+      return JSON.parse(schedule);
+    } catch {
+      return null;
+    }
+  }
+  return schedule;
+};
+
+const formatShiftRange = schedule => {
+  if (!schedule || typeof schedule !== "object") return "Schedule set";
+  const startTime = schedule.startTime ?? "9:00";
+  const startPeriod = schedule.startPeriod ?? "AM";
+  const endTime = schedule.endTime ?? "6:00";
+  const endPeriod = schedule.endPeriod ?? "PM";
+  return `${startTime} ${startPeriod} - ${endTime} ${endPeriod}`;
+};
+
 export default function CoachAttendancePage() {
   const navigate = useNavigate();
   const { user } = useCurrentUser();
@@ -139,6 +162,26 @@ export default function CoachAttendancePage() {
       return name.includes(query) || tag.includes(query);
     });
   }, [attendanceRows, searchQuery]);
+
+  const getMemberCurrentDaySchedule = member => {
+    const normalizedSchedule = normalizeSchedule(member?.schedule);
+    if (
+      !normalizedSchedule ||
+      typeof normalizedSchedule !== "object" ||
+      Array.isArray(normalizedSchedule)
+    ) {
+      return "Not scheduled today";
+    }
+
+    const currentDay = weekDayByIndex[new Date().getDay()];
+    if (!currentDay || !Array.isArray(normalizedSchedule.days)) return "Not scheduled today";
+    if (!normalizedSchedule.days.includes(currentDay)) return "Not scheduled today";
+
+    const daySchedule = normalizedSchedule.daySchedules?.[currentDay];
+    if (!daySchedule) return "Schedule set";
+
+    return formatShiftRange(daySchedule);
+  };
 
   const attendanceSummary = useMemo(() => {
     const total = attendanceRows.length;
@@ -335,7 +378,12 @@ export default function CoachAttendancePage() {
                         setHistoryDateEndFilter("");
                       }}
                     >
-                      <div className="table-cell attendance-name">{member.fullname}</div>
+                      <div className="table-cell attendance-name">
+                        <div>{member.fullname}</div>
+                        <div className="attendance-current-schedule">
+                          {getMemberCurrentDaySchedule(member)}
+                        </div>
+                      </div>
                       <div className="table-cell">{formatDateTime(member.time_in_at)}</div>
                       <div className="table-cell">{formatDateTime(member.time_out_at)}</div>
                       <div className="table-cell">{member.attendance_tag ?? "Pending"}</div>
