@@ -11,6 +11,13 @@ const formatDateTime = value => {
   return date.toLocaleString();
 };
 
+const attendanceSortOptions = {
+  newestAttendanceFirst: "newestAttendanceFirst",
+  latestAttendanceFirst: "latestAttendanceFirst",
+  nameAz: "nameAz",
+  nameZa: "nameZa",
+};
+
 const attendanceTagOptions = ["On Time", "Late", "Pending"];
 
 const weekDayByIndex = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -74,6 +81,7 @@ export default function CoachAttendancePage() {
   const [activeCluster, setActiveCluster] = useState(null);
   const [attendanceRows, setAttendanceRows] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [attendanceSort, setAttendanceSort] = useState(attendanceSortOptions.newestAttendanceFirst);
   const [historyDateStartFilter, setHistoryDateStartFilter] = useState("");
   const [historyDateEndFilter, setHistoryDateEndFilter] = useState("");
   const [selectedMember, setSelectedMember] = useState(null);
@@ -184,14 +192,44 @@ export default function CoachAttendancePage() {
 
   const filteredAttendanceRows = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
-    if (!query) return attendanceRows;
-
-    return attendanceRows.filter(member => {
+    const filteredRows = attendanceRows.filter(member => {
       const name = member.fullname?.toLowerCase() ?? "";
       const tag = member.attendance_tag?.toLowerCase() ?? "";
       return name.includes(query) || tag.includes(query);
     });
-  }, [attendanceRows, searchQuery]);
+   const getTimestamp = member => {
+      const parsedTimeIn = parseDateValue(member.time_in_at);
+      return parsedTimeIn ? parsedTimeIn.getTime() : null;
+    };
+
+    const compareNames = (a, b) => (a.fullname ?? "").localeCompare(b.fullname ?? "");
+
+    return [...filteredRows].sort((a, b) => {
+      if (attendanceSort === attendanceSortOptions.nameAz) {
+        return compareNames(a, b);
+      }
+
+      if (attendanceSort === attendanceSortOptions.nameZa) {
+        return compareNames(b, a);
+      }
+
+      const aTimestamp = getTimestamp(a);
+      const bTimestamp = getTimestamp(b);
+
+      if (aTimestamp === null && bTimestamp === null) {
+        return compareNames(a, b);
+      }
+
+      if (aTimestamp === null) return 1;
+      if (bTimestamp === null) return -1;
+
+      if (attendanceSort === attendanceSortOptions.latestAttendanceFirst) {
+        return aTimestamp - bTimestamp;
+      }
+
+      return bTimestamp - aTimestamp;
+    });
+  }, [attendanceRows, attendanceSort, searchQuery]);
 
   const getMemberCurrentDaySchedule = member => {
     const normalizedSchedule = normalizeSchedule(member?.schedule);
@@ -469,6 +507,19 @@ export default function CoachAttendancePage() {
                     value={searchQuery}
                     onChange={event => setSearchQuery(event.target.value)}
                   />
+                </label>
+                <label className="attendance-sort" htmlFor="attendance-sort-select">
+                  <span>Sort</span>
+                  <select
+                    id="attendance-sort-select"
+                    value={attendanceSort}
+                    onChange={event => setAttendanceSort(event.target.value)}
+                  >
+                    <option value={attendanceSortOptions.newestAttendanceFirst}>Newest attendance first</option>
+                    <option value={attendanceSortOptions.latestAttendanceFirst}>Latest attendance first</option>
+                    <option value={attendanceSortOptions.nameAz}>Name (A-Z)</option>
+                    <option value={attendanceSortOptions.nameZa}>Name (Z-A)</option>
+                  </select>
                 </label>
               </div>
 
