@@ -15,6 +15,36 @@ const attendanceTagOptions = ["On Time", "Late", "Pending"];
 
 const weekDayByIndex = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+const parseDateValue = value => {
+  if (!value) return null;
+  const parsedValue = typeof value === "string" ? value.replace(" ", "T") : value;
+  const date = new Date(parsedValue);
+  if (Number.isNaN(date.getTime())) return null;
+  return date;
+};
+
+const toMinutes = (time, period) => {
+  const [hourPart, minutePart] = String(time ?? "").split(":");
+  const hour = Number(hourPart);
+  const minute = Number(minutePart);
+
+  if (
+    Number.isNaN(hour) ||
+    Number.isNaN(minute) ||
+    hour < 1 ||
+    hour > 12 ||
+    minute < 0 ||
+    minute > 59
+  ) {
+    return null;
+  }
+
+  const normalizedHour = hour % 12;
+  const periodOffset = period === "PM" ? 12 * 60 : 0;
+  return normalizedHour * 60 + minute + periodOffset;
+};
+
+
 const normalizeSchedule = schedule => {
   if (!schedule) return null;
   if (typeof schedule === "string") {
@@ -181,6 +211,99 @@ export default function CoachAttendancePage() {
     if (!daySchedule) return "Schedule set";
 
     return formatShiftRange(daySchedule);
+  };
+
+  const getMemberCurrentDayScheduleDetails = member => {
+    const normalizedSchedule = normalizeSchedule(member?.schedule);
+    if (
+      !normalizedSchedule ||
+      typeof normalizedSchedule !== "object" ||
+      Array.isArray(normalizedSchedule)
+    ) {
+      return null;
+    }
+
+    const currentDay = weekDayByIndex[new Date().getDay()];
+    if (!currentDay || !Array.isArray(normalizedSchedule.days)) return null;
+    if (!normalizedSchedule.days.includes(currentDay)) return null;
+
+    return normalizedSchedule.daySchedules?.[currentDay] ?? normalizedSchedule;
+  };
+
+  const getAttendanceSubTags = member => {
+    const subTags = [];
+    const currentSchedule = getMemberCurrentDayScheduleDetails(member);
+    const timeInDate = parseDateValue(member.time_in_at);
+    const timeOutDate = parseDateValue(member.time_out_at);
+    const now = new Date();
+
+    const isSameDay = date => (
+      !!date &&
+      date.getFullYear() === now.getFullYear() &&
+      date.getMonth() === now.getMonth() &&
+      date.getDate() === now.getDate()
+    );
+
+    const hasTodayTimeIn = isSameDay(timeInDate);
+    const hasTodayTimeOut = isSameDay(timeOutDate);
+
+    if (currentSchedule && !hasTodayTimeIn && !hasTodayTimeOut) {
+      subTags.push("Absent");
+      subTags.push("No Time In");
+      return subTags;
+    }
+
+    if (hasTodayTimeIn && !hasTodayTimeOut) {
+      subTags.push("No Time Out");
+    }
+
+    if (currentSchedule && hasTodayTimeOut && !hasTodayTimeIn) {
+      subTags.push("No Time In");
+    }
+
+    if (!currentSchedule) return subTags;
+
+    const shiftStartMinutes = toMinutes(currentSchedule.startTime, currentSchedule.startPeriod);
+    const shiftEndMinutes = toMinutes(currentSchedule.endTime, currentSchedule.endPeriod);
+    if (shiftStartMinutes === null || shiftEndMinutes === null) return subTags;
+
+    const shiftDurationMinutes = shiftEndMinutes - shiftStartMinutes;
+    if (shiftDurationMinutes <= 0) return subTags;
+
+    const midpointMinutes = shiftStartMinutes + shiftDurationMinutes / 2;
+    const timeInMinutes = hasTodayTimeIn
+      ? timeInDate.getHours() * 60 + timeInDate.getMinutes()
+      : null;
+    const timeOutMinutes = hasTodayTimeOut
+      ? timeOutDate.getHours() * 60 + timeOutDate.getMinutes()
+      : null;
+
+    if (timeInMinutes !== null && timeInMinutes < shiftStartMinutes) {
+      subTags.push("Early Arrival");
+    }
+
+    if (timeOutMinutes !== null && timeOutMinutes > shiftEndMinutes) {
+      subTags.push("Overtime (OT)");
+    }
+
+    if (timeOutMinutes !== null && timeOutMinutes < shiftEndMinutes) {
+      subTags.push("Early Out");
+    }
+
+    if (timeInMinutes !== null && timeOutMinutes !== null) {
+      const workedMinutes = Math.max(timeOutMinutes - timeInMinutes, 0);
+      if (workedMinutes < shiftDurationMinutes) {
+        subTags.push("Undertime");
+      }
+
+      if (timeOutMinutes <= midpointMinutes && timeOutMinutes > shiftStartMinutes) {
+        subTags.push("Half Day (AM)");
+      } else if (timeInMinutes >= midpointMinutes && timeInMinutes < shiftEndMinutes) {
+        subTags.push("Half Day (PM)");
+      }
+    }
+
+    return [...new Set(subTags)];
   };
 
   const attendanceSummary = useMemo(() => {
@@ -386,7 +509,18 @@ export default function CoachAttendancePage() {
                       </div>
                       <div className="table-cell">{formatDateTime(member.time_in_at)}</div>
                       <div className="table-cell">{formatDateTime(member.time_out_at)}</div>
-                      <div className="table-cell">{member.attendance_tag ?? "Pending"}</div>
+                      <div className="table-cell attendance-main-tag-cell">
+                        <span className={`member-status-tag ${(member.attendance_tag ?? "Pending") ? "is-active" : ""}`}>
+                          {member.attendance_tag ?? "Pending"}
+                        </span>
+                        <div className="attendance-subtag-list">
+                          {getAttendanceSubTags(member).map(subTag => (
+                            <span key={`${member.id}-${subTag}`} className="attendance-subtag">
+                              {subTag}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
                     </button>
                   ))}
                 </div>

@@ -865,9 +865,10 @@ body {
 }
 
 .member-status-tag.is-active {
-  border-color: #1d4ed8;
-  color: #1d4ed8;
-  background: #dbeafe;
+  border-color: #E4EEFE;
+  color: #E4EEFE;
+  background: #357AF4;
+  font-weight: 600;
 }
 
 .status-lunch {
@@ -1893,6 +1894,32 @@ body {
 .attendance-tag-edit-button {
   padding: 4px 10px;
   font-size: 11px;
+}
+
+.attendance-main-tag-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.attendance-subtag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.attendance-subtag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #357AF3;
+  background: #E4EEFE;
+  border: 1px solid #357AF3;
 }
 
 .attendance-edit-actions {
