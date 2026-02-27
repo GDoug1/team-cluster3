@@ -603,6 +603,18 @@ body {
   gap: 12px;
 }
 
+.manage-team-modal {
+  max-height: min(92vh, 920px);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.manage-team-modal .modal-body {
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
 .schedule-modal .modal-body {
   min-height: 0;
   overflow-y: auto;

@@ -1239,7 +1239,7 @@ useEffect(() => {
         </section>
         {activeCluster && (
           <div className="modal-overlay" role="dialog" aria-modal="true">
-            <div className="modal-card">
+            <div className="modal-card manage-team-modal">
               <div className="modal-header">
                 <div>
                   <div className="modal-title">Manage Team</div>
@@ -1349,7 +1349,7 @@ useEffect(() => {
                 {showMemberForm && availableEmployees.length > 0 && (
                  <div className="member-form manage-team-form-card">
                     <div className="member-form-head">
-                      <div className="member-form-title">Add a new teammate</div>
+                      <div className="member-form-title">Add a new member</div>
                       <p className="member-form-subtitle">
                         Search by name, pick the employee, then confirm to assign them.
                       </p>
