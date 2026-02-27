@@ -4,7 +4,7 @@ import useLiveDateTime from "../hooks/useLiveDateTime";
 import useCurrentUser from "../hooks/useCurrentUser";
 
 export default function EmployeeDashboard() {
-  const statusTags = ["On Time", "Late", "Pending"];
+  const statusTags = ["On Time", "Late", "Scheduled", "Not scheduled"];
   const navItems = ["Dashboard", "Team", "Attendance", "Schedule"];
   const [data, setData] = useState([]);
   const [activeNav, setActiveNav] = useState("Team");
@@ -314,10 +314,12 @@ export default function EmployeeDashboard() {
     await persistAttendance(nextAttendance);
   };
 
-  const getStatusTag = statusLabel => {
+  const getStatusTag = (statusLabel, isScheduledToday) => {
     if (statusLabel === "On lunch break") return "Lunch Time";
     if (statusLabel === "On break time") return "Break Time";
-    if (statusLabel === "Not available") return "Pending";
+    if (statusLabel === "Not available") {
+      return isScheduledToday ? "Scheduled" : "Not scheduled";
+    }
     if (statusLabel === "Available") return "On Time";
     return null;
   };
@@ -338,7 +340,7 @@ export default function EmployeeDashboard() {
   const dayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   const hasScheduleToday = Boolean(getTodaySchedule());
   const currentStatus = getCurrentStatus();
-  const activeAttendanceTag = attendanceLog.tag ?? getStatusTag(currentStatus.label);
+  const activeAttendanceTag = attendanceLog.tag ?? getStatusTag(currentStatus.label, hasScheduleToday);
   const hasActiveTimeIn = Boolean(attendanceLog.timeInAt && !attendanceLog.timeOutAt);
   const hasTeamCluster = Boolean(activeCluster?.cluster_id);
   const canUseAttendanceControls = hasTeamCluster && hasScheduleToday;
@@ -472,7 +474,7 @@ export default function EmployeeDashboard() {
                   <div>
                     <strong>Status Tag:</strong>{" "}
                     <span className={`member-status-tag ${attendanceLog.tag ? "is-active" : ""}`}>
-                      {attendanceLog.tag ?? "Pending"}
+                      {attendanceLog.tag ?? (hasScheduleToday ? "Scheduled" : "Not scheduled")}
                     </span>
                   </div>
                 </div>
@@ -586,7 +588,7 @@ export default function EmployeeDashboard() {
                       <div className="employee-field-label">Latest Attendance Tag</div>
                       <div className="employee-field-value">
                         <span className={`member-status-tag ${activeAttendanceTag ? "is-active" : ""}`}>
-                          {activeAttendanceTag ?? "Pending"}
+                          {activeAttendanceTag ?? (hasScheduleToday ? "Scheduled" : "Not scheduled")}
                         </span>
                       </div>
                     </div>
