@@ -274,6 +274,7 @@ export default function CoachAttendancePage() {
     const timeInDate = parseDateValue(member.time_in_at);
     const timeOutDate = parseDateValue(member.time_out_at);
     const now = new Date();
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
 
     const isSameDay = date => (
       !!date &&
@@ -320,10 +321,6 @@ export default function CoachAttendancePage() {
       subTags.push("Early Arrival");
     }
 
-    if (timeOutMinutes !== null && timeOutMinutes > shiftEndMinutes) {
-      subTags.push("Overtime (OT)");
-    }
-
     if (timeOutMinutes !== null && timeOutMinutes < shiftEndMinutes) {
       subTags.push("Early Out");
     }
@@ -332,12 +329,6 @@ export default function CoachAttendancePage() {
       const workedMinutes = Math.max(timeOutMinutes - timeInMinutes, 0);
       if (workedMinutes < shiftDurationMinutes) {
         subTags.push("Undertime");
-      }
-
-      if (timeOutMinutes <= midpointMinutes && timeOutMinutes > shiftStartMinutes) {
-        subTags.push("Half Day (AM)");
-      } else if (timeInMinutes >= midpointMinutes && timeInMinutes < shiftEndMinutes) {
-        subTags.push("Half Day (PM)");
       }
     }
 
