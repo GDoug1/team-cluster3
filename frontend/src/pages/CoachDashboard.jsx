@@ -1195,6 +1195,10 @@ useEffect(() => {
                   </div>
                   {filteredActiveMembers.map(member => {
                     const status = getMemberCurrentStatus(member);
+                    const displayStatus = status ?? {
+                      label: "Not available",
+                      className: "status-not-available"
+                    };
                     const activeStatusTag = getActiveStatusTag(member);
                     return (
                       <div key={member.id} className="active-members-schedule-row" role="row">
@@ -1221,20 +1225,15 @@ useEffect(() => {
                           );
                         })}
                         <div role="cell" className="member-status-and-tags-cell">
-                          {status && (
-                            <>
-                              <span className={`member-status-pill ${status.className}`}>{status.label}</span>
-                              <div className="member-status-tag-list" aria-label="Status tags">
-                                {statusTags.map(tag => (
-                                  <span
-                                    key={`${member.id}-${tag}`}
-                                    className={`member-status-tag ${activeStatusTag === tag ? "is-active" : ""}`}
-                                  >
-                                    {tag}
-                                  </span>
-                                ))}
-                              </div>
-                            </>
+                          <span className={`member-status-pill ${displayStatus.className}`}>
+                            {displayStatus.label}
+                          </span>
+                          {activeStatusTag && (
+                            <div className="member-status-tag-list" aria-label="Status tags">
+                              <span key={`${member.id}-${activeStatusTag}`} className="member-status-tag is-active">
+                                {activeStatusTag}
+                              </span>
+                            </div>
                           )}
                         </div>
                       </div>

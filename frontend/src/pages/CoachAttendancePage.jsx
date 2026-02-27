@@ -18,7 +18,7 @@ const attendanceSortOptions = {
   nameZa: "nameZa",
 };
 
-const attendanceTagOptions = ["On Time", "Late", "Pending"];
+const attendanceTagOptions = ["On Time", "Late", "Scheduled"];
 
 const weekDayByIndex = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -552,8 +552,8 @@ export default function CoachAttendancePage() {
                       <div className="table-cell">{formatDateTime(member.time_in_at)}</div>
                       <div className="table-cell">{formatDateTime(member.time_out_at)}</div>
                       <div className="table-cell attendance-main-tag-cell">
-                        <span className={`member-status-tag ${(member.attendance_tag ?? "Pending") ? "is-active" : ""}`}>
-                          {member.attendance_tag ?? "Pending"}
+                        <span className={`member-status-tag ${(member.attendance_tag ?? "Scheduled") ? "is-active" : ""}`}>
+                          {member.attendance_tag ?? "Scheduled"}
                         </span>
                         <div className="attendance-subtag-list">
                           {getAttendanceSubTags(member).map(subTag => (
@@ -626,7 +626,7 @@ export default function CoachAttendancePage() {
                                     <span role="cell">{formatDateTime(entry.time_out_at)}</span>
                                     <span role="cell" className="attendance-tag-cell">
                                       <span className={`member-status-tag ${entry.tag ? "is-active" : ""}`}>
-                                        {entry.tag ?? "Pending"}
+                                        {entry.tag ?? "Scheduled"}
                                       </span>
                                       <button
                                         type="button"
