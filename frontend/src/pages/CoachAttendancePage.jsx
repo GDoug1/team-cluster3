@@ -318,11 +318,11 @@ export default function CoachAttendancePage() {
       : null;
 
     if (timeInMinutes !== null && timeInMinutes < shiftStartMinutes) {
-      subTags.push("Early Arrival");
+      subTags.push("Early Time In");
     }
 
     if (timeOutMinutes !== null && timeOutMinutes < shiftEndMinutes) {
-      subTags.push("Early Out");
+      subTags.push("Early Time Out");
     }
 
     if (timeInMinutes !== null && timeOutMinutes !== null) {
