@@ -258,6 +258,13 @@ export default function CoachAttendancePage() {
     fallbackTag: "Scheduled"
   });
 
+  const getAttendanceHistoryTag = entry => resolveAttendanceMainTag({
+    attendanceTag: entry?.tag,
+    schedule: selectedMember?.schedule,
+    timeInAt: entry?.time_in_at,
+    fallbackTag: "Scheduled",
+  });
+
   const getAttendanceSubTags = member => {
     const subTags = [];
     const currentSchedule = getMemberCurrentDayScheduleDetails(member);
@@ -608,30 +615,34 @@ export default function CoachAttendancePage() {
                                   <span role="columnheader">Time Out</span>
                                   <span role="columnheader">Tag</span>
                                 </div>
-                                {attendanceHistoryEntries.map((entry, index) => (
-                                  <div
-                                    key={entry.id ?? `${entry.time_in_at ?? entry.time_out_at ?? "history"}-${index}`}
-                                    className="employee-attendance-history-row"
-                                    role="row"
-                                  >
-                                    <span role="cell">{formatDateTime(entry.time_in_at ?? entry.time_out_at)}</span>
-                                    <span role="cell">{activeCluster?.name ?? "—"}</span>
-                                    <span role="cell">{formatDateTime(entry.time_in_at)}</span>
-                                    <span role="cell">{formatDateTime(entry.time_out_at)}</span>
-                                    <span role="cell" className="attendance-tag-cell">
-                                      <span className={`member-status-tag ${entry.tag ? "is-active" : ""}`}>
-                                        {entry.tag ?? "Scheduled"}
+                                {attendanceHistoryEntries.map((entry, index) => {
+                                  const historyTag = getAttendanceHistoryTag(entry);
+
+                                  return (
+                                    <div
+                                      key={entry.id ?? `${entry.time_in_at ?? entry.time_out_at ?? "history"}-${index}`}
+                                      className="employee-attendance-history-row"
+                                      role="row"
+                                    >
+                                      <span role="cell">{formatDateTime(entry.time_in_at ?? entry.time_out_at)}</span>
+                                      <span role="cell">{activeCluster?.name ?? "—"}</span>
+                                      <span role="cell">{formatDateTime(entry.time_in_at)}</span>
+                                      <span role="cell">{formatDateTime(entry.time_out_at)}</span>
+                                      <span role="cell" className="attendance-tag-cell">
+                                        <span className={`member-status-tag ${historyTag ? "is-active" : ""}`}>
+                                          {historyTag}
+                                        </span>
+                                        <button
+                                          type="button"
+                                          className="btn attendance-tag-edit-button"
+                                          onClick={() => openEditModal(entry)}
+                                        >
+                                          Edit
+                                        </button>
                                       </span>
-                                      <button
-                                        type="button"
-                                        className="btn attendance-tag-edit-button"
-                                        onClick={() => openEditModal(entry)}
-                                      >
-                                        Edit
-                                      </button>
-                                    </span>
-                                  </div>
-                                ))}
+                                      </div>
+                                  );
+                                })}
                               </div>
                             )}
                             {attendanceHistoryEntries.length === 0 && (
