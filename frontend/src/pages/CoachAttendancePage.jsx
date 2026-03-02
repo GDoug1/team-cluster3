@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../api/api";
 import useLiveDateTime from "../hooks/useLiveDateTime";
@@ -22,6 +22,14 @@ const attendanceSortOptions = {
 const attendanceTagOptions = ["On Time", "Late", "Scheduled", "Off Scheduled"];
 
 const weekDayByIndex = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+const getTodayDateInputValue = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = `${now.getMonth() + 1}`.padStart(2, "0");
+  const day = `${now.getDate()}`.padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
 
 
 const toMinutes = (time, period) => {
@@ -65,6 +73,7 @@ export default function CoachAttendancePage() {
   const [attendanceRows, setAttendanceRows] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [attendanceSort, setAttendanceSort] = useState(attendanceSortOptions.newestAttendanceFirst);
+  const [attendanceDateFilter, setAttendanceDateFilter] = useState(getTodayDateInputValue);
   const [historyDateStartFilter, setHistoryDateStartFilter] = useState("");
   const [historyDateEndFilter, setHistoryDateEndFilter] = useState("");
   const [selectedMember, setSelectedMember] = useState(null);
@@ -134,44 +143,39 @@ export default function CoachAttendancePage() {
     setSaveFeedback("");
   };
   
-  useEffect(() => {
-    let ignore = false;
+ 
 
-    const loadAttendance = async () => {
-      setLoading(true);
-      setError("");
+    const loadAttendance = useCallback(async () => {
+    setLoading(true);
+    setError("");
 
       try {
-        const clusters = await apiFetch("api/coach_clusters.php");
-        const cluster = clusters.find(item => item.status === "active") ?? null;
+      const clusters = await apiFetch("api/coach_clusters.php");
+      const cluster = clusters.find(item => item.status === "active") ?? null;
 
-        if (ignore) return;
+       
         setActiveCluster(cluster);
 
         if (!cluster) {
-          setAttendanceRows([]);
-          return;
-        }
-
-        const members = await apiFetch(`api/manage_members.php?cluster_id=${cluster.id}`);
-        if (ignore) return;
-        setAttendanceRows(members);
-      } catch (err) {
-        if (ignore) return;
-        setError(err?.error ?? "Unable to load attendance records.");
-      } finally {
-        if (!ignore) {
-          setLoading(false);
-        }
+        setAttendanceRows([]);
+        return;
       }
-    };
 
+      const members = await apiFetch(
+        `api/manage_members.php?cluster_id=${cluster.id}&attendance_date=${attendanceDateFilter}`
+      );
+      setAttendanceRows(members);
+    } catch (err) {
+      setError(err?.error ?? "Unable to load attendance records.");
+    } finally {
+      setLoading(false);
+    }
+  }, [attendanceDateFilter]);
+
+  useEffect(() => {
     loadAttendance();
-
-    return () => {
-      ignore = true;
-    };
-  }, []);
+  }, [loadAttendance]);
+   
 
   const filteredAttendanceRows = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -400,7 +404,7 @@ export default function CoachAttendancePage() {
         }),
       });
 
-      const refreshedMembers = await apiFetch(`api/manage_members.php?cluster_id=${activeCluster.id}`);
+      const refreshedMembers = await apiFetch(`api/manage_members.php?cluster_id=${activeCluster.id}&attendance_date=${attendanceDateFilter}`);
       setAttendanceRows(refreshedMembers);
       const refreshedMember = refreshedMembers.find(member => Number(member.id) === Number(selectedMember.id));
       if (refreshedMember) {
@@ -473,7 +477,7 @@ export default function CoachAttendancePage() {
 
           {!loading && !error && activeCluster && (
             <>
-              <div className="section-title">{activeCluster.name} Attendance</div>
+              <div className="section-title">{activeCluster.name} Attendance ({attendanceDateFilter})</div>
               <div className="attendance-summary-grid">
                 <div className="overview-card">
                   <div className="overview-label">Employees</div>
@@ -498,6 +502,15 @@ export default function CoachAttendancePage() {
                     placeholder="Search by name or attendance tag"
                     value={searchQuery}
                     onChange={event => setSearchQuery(event.target.value)}
+                  />
+                </label>
+                <label className="attendance-date" htmlFor="attendance-date-filter">
+                  <span>Date</span>
+                  <input
+                    id="attendance-date-filter"
+                    type="date"
+                    value={attendanceDateFilter}
+                    onChange={event => setAttendanceDateFilter(event.target.value || getTodayDateInputValue())}
                   />
                 </label>
                 <label className="attendance-sort" htmlFor="attendance-sort-select">

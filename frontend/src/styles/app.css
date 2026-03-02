@@ -1686,6 +1686,7 @@ body {
 }
 
 .attendance-search,
+.attendance-date,
 .attendance-sort {
   display: grid;
   gap: 6px;
@@ -1694,6 +1695,7 @@ body {
 }
 
 .attendance-search input,
+.attendance-date input,
 .attendance-sort select {
   width: min(360px, 76vw);
   border: 1px solid #cbd5e1;
@@ -1852,7 +1854,9 @@ body {
 
   .attendance-search,
   .attendance-sort,
+  .attendance-date,
   .attendance-search input,
+  .attendance-date input,
   .attendance-sort select {
     width: 100%;
   }
