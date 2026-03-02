@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../api/api";
 import useLiveDateTime from "../hooks/useLiveDateTime";
 import useCurrentUser from "../hooks/useCurrentUser";
+import { normalizeSchedule, parseDateValue, resolveAttendanceMainTag } from "../utils/attendanceTags";
 
 const formatDateTime = value => {
   if (!value) return "—";
@@ -22,13 +23,6 @@ const attendanceTagOptions = ["On Time", "Late", "Scheduled", "Off Scheduled"];
 
 const weekDayByIndex = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-const parseDateValue = value => {
-  if (!value) return null;
-  const parsedValue = typeof value === "string" ? value.replace(" ", "T") : value;
-  const date = new Date(parsedValue);
-  if (Number.isNaN(date.getTime())) return null;
-  return date;
-};
 
 const toMinutes = (time, period) => {
   const [hourPart, minutePart] = String(time ?? "").split(":");
@@ -52,17 +46,6 @@ const toMinutes = (time, period) => {
 };
 
 
-const normalizeSchedule = schedule => {
-  if (!schedule) return null;
-  if (typeof schedule === "string") {
-    try {
-      return JSON.parse(schedule);
-    } catch {
-      return null;
-    }
-  }
-  return schedule;
-};
 
 const formatShiftRange = schedule => {
   if (!schedule || typeof schedule !== "object") return "Schedule set";
@@ -268,32 +251,12 @@ export default function CoachAttendancePage() {
     return normalizedSchedule.daySchedules?.[currentDay] ?? normalizedSchedule;
   };
 
-  const isMemberOffScheduled = member => {
-    const currentSchedule = getMemberCurrentDayScheduleDetails(member);
-    const timeInDate = parseDateValue(member.time_in_at);
-    if (!currentSchedule || !timeInDate) return false;
-
-    const now = new Date();
-    const isSameDay = (
-      timeInDate.getFullYear() === now.getFullYear() &&
-      timeInDate.getMonth() === now.getMonth() &&
-      timeInDate.getDate() === now.getDate()
-    );
-    if (!isSameDay) return false;
-
-    const shiftStartMinutes = toMinutes(currentSchedule.startTime, currentSchedule.startPeriod);
-    const shiftEndMinutes = toMinutes(currentSchedule.endTime, currentSchedule.endPeriod);
-    if (shiftStartMinutes === null || shiftEndMinutes === null) return false;
-
-    const timeInMinutes = timeInDate.getHours() * 60 + timeInDate.getMinutes();
-    return timeInMinutes < shiftStartMinutes || timeInMinutes > shiftEndMinutes;
-  };
-
-  const getAttendanceMainTag = member => {
-    if (isMemberOffScheduled(member)) return "Off Scheduled";
-    return member.attendance_tag ?? "Scheduled";
-  };
-
+  const getAttendanceMainTag = member => resolveAttendanceMainTag({
+    attendanceTag: member.attendance_tag,
+    schedule: member.schedule,
+    timeInAt: member.time_in_at,
+    fallbackTag: "Scheduled"
+  });
 
   const getAttendanceSubTags = member => {
     const subTags = [];
