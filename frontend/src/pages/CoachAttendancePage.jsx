@@ -18,7 +18,7 @@ const attendanceSortOptions = {
   nameZa: "nameZa",
 };
 
-const attendanceTagOptions = ["On Time", "Late", "Scheduled"];
+const attendanceTagOptions = ["On Time", "Late", "Scheduled", "Off Scheduled"];
 
 const weekDayByIndex = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -268,13 +268,40 @@ export default function CoachAttendancePage() {
     return normalizedSchedule.daySchedules?.[currentDay] ?? normalizedSchedule;
   };
 
+  const isMemberOffScheduled = member => {
+    const currentSchedule = getMemberCurrentDayScheduleDetails(member);
+    const timeInDate = parseDateValue(member.time_in_at);
+    if (!currentSchedule || !timeInDate) return false;
+
+    const now = new Date();
+    const isSameDay = (
+      timeInDate.getFullYear() === now.getFullYear() &&
+      timeInDate.getMonth() === now.getMonth() &&
+      timeInDate.getDate() === now.getDate()
+    );
+    if (!isSameDay) return false;
+
+    const shiftStartMinutes = toMinutes(currentSchedule.startTime, currentSchedule.startPeriod);
+    const shiftEndMinutes = toMinutes(currentSchedule.endTime, currentSchedule.endPeriod);
+    if (shiftStartMinutes === null || shiftEndMinutes === null) return false;
+
+    const timeInMinutes = timeInDate.getHours() * 60 + timeInDate.getMinutes();
+    return timeInMinutes < shiftStartMinutes || timeInMinutes > shiftEndMinutes;
+  };
+
+  const getAttendanceMainTag = member => {
+    if (isMemberOffScheduled(member)) return "Off Scheduled";
+    return member.attendance_tag ?? "Scheduled";
+  };
+
+
   const getAttendanceSubTags = member => {
     const subTags = [];
     const currentSchedule = getMemberCurrentDayScheduleDetails(member);
     const timeInDate = parseDateValue(member.time_in_at);
     const timeOutDate = parseDateValue(member.time_out_at);
     const now = new Date();
-    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+    
 
     const isSameDay = date => (
       !!date &&
@@ -309,13 +336,17 @@ export default function CoachAttendancePage() {
     const shiftDurationMinutes = shiftEndMinutes - shiftStartMinutes;
     if (shiftDurationMinutes <= 0) return subTags;
 
-    const midpointMinutes = shiftStartMinutes + shiftDurationMinutes / 2;
+    
     const timeInMinutes = hasTodayTimeIn
       ? timeInDate.getHours() * 60 + timeInDate.getMinutes()
       : null;
     const timeOutMinutes = hasTodayTimeOut
       ? timeOutDate.getHours() * 60 + timeOutDate.getMinutes()
       : null;
+    
+    if (timeInMinutes !== null && (timeInMinutes < shiftStartMinutes || timeInMinutes > shiftEndMinutes)) {
+      subTags.push("Off Scheduled");
+    }
 
     if (timeInMinutes !== null && timeInMinutes < shiftStartMinutes) {
       subTags.push("Early Time In");
@@ -332,7 +363,7 @@ export default function CoachAttendancePage() {
       }
     }
 
-    return [...new Set(subTags)];
+    return [...new Set(subTags)].filter(subTag => subTag !== "Off Scheduled");
   };
 
   const attendanceSummary = useMemo(() => {
@@ -552,8 +583,8 @@ export default function CoachAttendancePage() {
                       <div className="table-cell">{formatDateTime(member.time_in_at)}</div>
                       <div className="table-cell">{formatDateTime(member.time_out_at)}</div>
                       <div className="table-cell attendance-main-tag-cell">
-                        <span className={`member-status-tag ${(member.attendance_tag ?? "Scheduled") ? "is-active" : ""}`}>
-                          {member.attendance_tag ?? "Scheduled"}
+                        <span className={`member-status-tag ${getAttendanceMainTag(member) ? "is-active" : ""}`}>
+                          {getAttendanceMainTag(member)}
                         </span>
                         <div className="attendance-subtag-list">
                           {getAttendanceSubTags(member).map(subTag => (
