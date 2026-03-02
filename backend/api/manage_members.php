@@ -4,6 +4,13 @@ include "../config/auth.php";
 requireRole("coach");
 
 $cluster_id = (int)$_GET['cluster_id'];
+$attendance_date = isset($_GET['attendance_date']) ? trim($_GET['attendance_date']) : date('Y-m-d');
+
+if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $attendance_date)) {
+    $attendance_date = date('Y-m-d');
+}
+
+$escapedAttendanceDate = $conn->real_escape_string($attendance_date);
 
 $res = $conn->query(
     "SELECT u.id,
@@ -24,6 +31,7 @@ $res = $conn->query(
             FROM attendance_logs al2
             WHERE al2.cluster_id = cm.cluster_id
               AND al2.employee_id = cm.employee_id
+              AND DATE(COALESCE(al2.time_in_at, al2.time_out_at, al2.updated_at)) = '$escapedAttendanceDate'
             ORDER BY COALESCE(al2.time_in_at, al2.updated_at) DESC, al2.id DESC
             LIMIT 1
         )

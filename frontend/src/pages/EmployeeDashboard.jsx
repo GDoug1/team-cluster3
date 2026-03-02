@@ -2,9 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "../api/api";
 import useLiveDateTime from "../hooks/useLiveDateTime";
 import useCurrentUser from "../hooks/useCurrentUser";
+import { resolveAttendanceMainTag } from "../utils/attendanceTags";
 
 export default function EmployeeDashboard() {
-  const statusTags = ["On Time", "Late", "Scheduled", "Not scheduled"];
+  const statusTags = ["On Time", "Late", "Scheduled", "Off Scheduled", "Not scheduled"];
   const navItems = ["Dashboard", "Team", "Attendance", "Schedule"];
   const [data, setData] = useState([]);
   const [activeNav, setActiveNav] = useState("Team");
@@ -340,7 +341,12 @@ export default function EmployeeDashboard() {
   const dayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   const hasScheduleToday = Boolean(getTodaySchedule());
   const currentStatus = getCurrentStatus();
-  const activeAttendanceTag = attendanceLog.tag ?? getStatusTag(currentStatus.label, hasScheduleToday);
+  const activeAttendanceTag = resolveAttendanceMainTag({
+    attendanceTag: attendanceLog.tag,
+    schedule: activeCluster?.schedule,
+    timeInAt: attendanceLog.timeInAt,
+    fallbackTag: getStatusTag(currentStatus.label, hasScheduleToday)
+  });
   const hasActiveTimeIn = Boolean(attendanceLog.timeInAt && !attendanceLog.timeOutAt);
   const hasTeamCluster = Boolean(activeCluster?.cluster_id);
   const canUseAttendanceControls = hasTeamCluster && hasScheduleToday;

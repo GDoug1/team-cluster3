@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 import { apiFetch } from "../api/api";
 import useLiveDateTime from "../hooks/useLiveDateTime";
 import useCurrentUser from "../hooks/useCurrentUser";
+import { resolveAttendanceMainTag } from "../utils/attendanceTags";
 
 export default function CoachDashboard() {
-  const statusTags = ["On Time", "Late", "Scheduled", "Not scheduled"];
+  const statusTags = ["On Time", "Late", "Scheduled", "Off Scheduled", "Not scheduled"];
   const dayOptions = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   const defaultDaySchedule = {
     startTime: "9:00",
@@ -357,7 +358,12 @@ export default function CoachDashboard() {
       : [];
     const isScheduledToday = assignedDays.includes(getCurrentDayLabel());
 
-    return member.attendance_tag ?? getMemberStatusTag(status?.label, isScheduledToday);
+    return resolveAttendanceMainTag({
+      attendanceTag: member.attendance_tag,
+      schedule: member.schedule,
+      timeInAt: member.time_in_at,
+      fallbackTag: getMemberStatusTag(status?.label, isScheduledToday)
+    });
   };
 
   const filteredActiveMembers = activeMembers.filter(member => {

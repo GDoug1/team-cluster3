@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../api/api";
 import useLiveDateTime from "../hooks/useLiveDateTime";
 import useCurrentUser from "../hooks/useCurrentUser";
+import { normalizeSchedule, parseDateValue, resolveAttendanceMainTag } from "../utils/attendanceTags";
 
 const formatDateTime = value => {
   if (!value) return "—";
@@ -18,17 +19,18 @@ const attendanceSortOptions = {
   nameZa: "nameZa",
 };
 
-const attendanceTagOptions = ["On Time", "Late", "Scheduled"];
+const attendanceTagOptions = ["On Time", "Late", "Scheduled", "Off Scheduled"];
 
 const weekDayByIndex = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-const parseDateValue = value => {
-  if (!value) return null;
-  const parsedValue = typeof value === "string" ? value.replace(" ", "T") : value;
-  const date = new Date(parsedValue);
-  if (Number.isNaN(date.getTime())) return null;
-  return date;
+const getTodayDateInputValue = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = `${now.getMonth() + 1}`.padStart(2, "0");
+  const day = `${now.getDate()}`.padStart(2, "0");
+  return `${year}-${month}-${day}`;
 };
+
 
 const toMinutes = (time, period) => {
   const [hourPart, minutePart] = String(time ?? "").split(":");
@@ -52,17 +54,6 @@ const toMinutes = (time, period) => {
 };
 
 
-const normalizeSchedule = schedule => {
-  if (!schedule) return null;
-  if (typeof schedule === "string") {
-    try {
-      return JSON.parse(schedule);
-    } catch {
-      return null;
-    }
-  }
-  return schedule;
-};
 
 const formatShiftRange = schedule => {
   if (!schedule || typeof schedule !== "object") return "Schedule set";
@@ -82,6 +73,7 @@ export default function CoachAttendancePage() {
   const [attendanceRows, setAttendanceRows] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [attendanceSort, setAttendanceSort] = useState(attendanceSortOptions.newestAttendanceFirst);
+  const [attendanceDateFilter, setAttendanceDateFilter] = useState(getTodayDateInputValue);
   const [historyDateStartFilter, setHistoryDateStartFilter] = useState("");
   const [historyDateEndFilter, setHistoryDateEndFilter] = useState("");
   const [selectedMember, setSelectedMember] = useState(null);
@@ -151,44 +143,39 @@ export default function CoachAttendancePage() {
     setSaveFeedback("");
   };
   
-  useEffect(() => {
-    let ignore = false;
+ 
 
-    const loadAttendance = async () => {
-      setLoading(true);
-      setError("");
+    const loadAttendance = useCallback(async () => {
+    setLoading(true);
+    setError("");
 
       try {
-        const clusters = await apiFetch("api/coach_clusters.php");
-        const cluster = clusters.find(item => item.status === "active") ?? null;
+      const clusters = await apiFetch("api/coach_clusters.php");
+      const cluster = clusters.find(item => item.status === "active") ?? null;
 
-        if (ignore) return;
+       
         setActiveCluster(cluster);
 
         if (!cluster) {
-          setAttendanceRows([]);
-          return;
-        }
-
-        const members = await apiFetch(`api/manage_members.php?cluster_id=${cluster.id}`);
-        if (ignore) return;
-        setAttendanceRows(members);
-      } catch (err) {
-        if (ignore) return;
-        setError(err?.error ?? "Unable to load attendance records.");
-      } finally {
-        if (!ignore) {
-          setLoading(false);
-        }
+        setAttendanceRows([]);
+        return;
       }
-    };
 
+      const members = await apiFetch(
+        `api/manage_members.php?cluster_id=${cluster.id}&attendance_date=${attendanceDateFilter}`
+      );
+      setAttendanceRows(members);
+    } catch (err) {
+      setError(err?.error ?? "Unable to load attendance records.");
+    } finally {
+      setLoading(false);
+    }
+  }, [attendanceDateFilter]);
+
+  useEffect(() => {
     loadAttendance();
-
-    return () => {
-      ignore = true;
-    };
-  }, []);
+  }, [loadAttendance]);
+   
 
   const filteredAttendanceRows = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -268,13 +255,27 @@ export default function CoachAttendancePage() {
     return normalizedSchedule.daySchedules?.[currentDay] ?? normalizedSchedule;
   };
 
+  const getAttendanceMainTag = member => resolveAttendanceMainTag({
+    attendanceTag: member.attendance_tag,
+    schedule: member.schedule,
+    timeInAt: member.time_in_at,
+    fallbackTag: "Scheduled"
+  });
+
+  const getAttendanceHistoryTag = entry => resolveAttendanceMainTag({
+    attendanceTag: entry?.tag,
+    schedule: selectedMember?.schedule,
+    timeInAt: entry?.time_in_at,
+    fallbackTag: "Scheduled",
+  });
+
   const getAttendanceSubTags = member => {
     const subTags = [];
     const currentSchedule = getMemberCurrentDayScheduleDetails(member);
     const timeInDate = parseDateValue(member.time_in_at);
     const timeOutDate = parseDateValue(member.time_out_at);
     const now = new Date();
-    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+    
 
     const isSameDay = date => (
       !!date &&
@@ -309,20 +310,24 @@ export default function CoachAttendancePage() {
     const shiftDurationMinutes = shiftEndMinutes - shiftStartMinutes;
     if (shiftDurationMinutes <= 0) return subTags;
 
-    const midpointMinutes = shiftStartMinutes + shiftDurationMinutes / 2;
+    
     const timeInMinutes = hasTodayTimeIn
       ? timeInDate.getHours() * 60 + timeInDate.getMinutes()
       : null;
     const timeOutMinutes = hasTodayTimeOut
       ? timeOutDate.getHours() * 60 + timeOutDate.getMinutes()
       : null;
+    
+    if (timeInMinutes !== null && (timeInMinutes < shiftStartMinutes || timeInMinutes > shiftEndMinutes)) {
+      subTags.push("Off Scheduled");
+    }
 
     if (timeInMinutes !== null && timeInMinutes < shiftStartMinutes) {
-      subTags.push("Early Arrival");
+      subTags.push("Early Time In");
     }
 
     if (timeOutMinutes !== null && timeOutMinutes < shiftEndMinutes) {
-      subTags.push("Early Out");
+      subTags.push("Early Time Out");
     }
 
     if (timeInMinutes !== null && timeOutMinutes !== null) {
@@ -332,7 +337,7 @@ export default function CoachAttendancePage() {
       }
     }
 
-    return [...new Set(subTags)];
+    return [...new Set(subTags)].filter(subTag => subTag !== "Off Scheduled");
   };
 
   const attendanceSummary = useMemo(() => {
@@ -399,7 +404,7 @@ export default function CoachAttendancePage() {
         }),
       });
 
-      const refreshedMembers = await apiFetch(`api/manage_members.php?cluster_id=${activeCluster.id}`);
+      const refreshedMembers = await apiFetch(`api/manage_members.php?cluster_id=${activeCluster.id}&attendance_date=${attendanceDateFilter}`);
       setAttendanceRows(refreshedMembers);
       const refreshedMember = refreshedMembers.find(member => Number(member.id) === Number(selectedMember.id));
       if (refreshedMember) {
@@ -472,7 +477,7 @@ export default function CoachAttendancePage() {
 
           {!loading && !error && activeCluster && (
             <>
-              <div className="section-title">{activeCluster.name} Attendance</div>
+              <div className="section-title">{activeCluster.name} Attendance ({attendanceDateFilter})</div>
               <div className="attendance-summary-grid">
                 <div className="overview-card">
                   <div className="overview-label">Employees</div>
@@ -497,6 +502,15 @@ export default function CoachAttendancePage() {
                     placeholder="Search by name or attendance tag"
                     value={searchQuery}
                     onChange={event => setSearchQuery(event.target.value)}
+                  />
+                </label>
+                <label className="attendance-date" htmlFor="attendance-date-filter">
+                  <span>Date</span>
+                  <input
+                    id="attendance-date-filter"
+                    type="date"
+                    value={attendanceDateFilter}
+                    onChange={event => setAttendanceDateFilter(event.target.value || getTodayDateInputValue())}
                   />
                 </label>
                 <label className="attendance-sort" htmlFor="attendance-sort-select">
@@ -552,8 +566,8 @@ export default function CoachAttendancePage() {
                       <div className="table-cell">{formatDateTime(member.time_in_at)}</div>
                       <div className="table-cell">{formatDateTime(member.time_out_at)}</div>
                       <div className="table-cell attendance-main-tag-cell">
-                        <span className={`member-status-tag ${(member.attendance_tag ?? "Scheduled") ? "is-active" : ""}`}>
-                          {member.attendance_tag ?? "Scheduled"}
+                        <span className={`member-status-tag ${getAttendanceMainTag(member) ? "is-active" : ""}`}>
+                          {getAttendanceMainTag(member)}
                         </span>
                         <div className="attendance-subtag-list">
                           {getAttendanceSubTags(member).map(subTag => (
@@ -614,30 +628,34 @@ export default function CoachAttendancePage() {
                                   <span role="columnheader">Time Out</span>
                                   <span role="columnheader">Tag</span>
                                 </div>
-                                {attendanceHistoryEntries.map((entry, index) => (
-                                  <div
-                                    key={entry.id ?? `${entry.time_in_at ?? entry.time_out_at ?? "history"}-${index}`}
-                                    className="employee-attendance-history-row"
-                                    role="row"
-                                  >
-                                    <span role="cell">{formatDateTime(entry.time_in_at ?? entry.time_out_at)}</span>
-                                    <span role="cell">{activeCluster?.name ?? "—"}</span>
-                                    <span role="cell">{formatDateTime(entry.time_in_at)}</span>
-                                    <span role="cell">{formatDateTime(entry.time_out_at)}</span>
-                                    <span role="cell" className="attendance-tag-cell">
-                                      <span className={`member-status-tag ${entry.tag ? "is-active" : ""}`}>
-                                        {entry.tag ?? "Scheduled"}
+                                {attendanceHistoryEntries.map((entry, index) => {
+                                  const historyTag = getAttendanceHistoryTag(entry);
+
+                                  return (
+                                    <div
+                                      key={entry.id ?? `${entry.time_in_at ?? entry.time_out_at ?? "history"}-${index}`}
+                                      className="employee-attendance-history-row"
+                                      role="row"
+                                    >
+                                      <span role="cell">{formatDateTime(entry.time_in_at ?? entry.time_out_at)}</span>
+                                      <span role="cell">{activeCluster?.name ?? "—"}</span>
+                                      <span role="cell">{formatDateTime(entry.time_in_at)}</span>
+                                      <span role="cell">{formatDateTime(entry.time_out_at)}</span>
+                                      <span role="cell" className="attendance-tag-cell">
+                                        <span className={`member-status-tag ${historyTag ? "is-active" : ""}`}>
+                                          {historyTag}
+                                        </span>
+                                        <button
+                                          type="button"
+                                          className="btn attendance-tag-edit-button"
+                                          onClick={() => openEditModal(entry)}
+                                        >
+                                          Edit
+                                        </button>
                                       </span>
-                                      <button
-                                        type="button"
-                                        className="btn attendance-tag-edit-button"
-                                        onClick={() => openEditModal(entry)}
-                                      >
-                                        Edit
-                                      </button>
-                                    </span>
-                                  </div>
-                                ))}
+                                      </div>
+                                  );
+                                })}
                               </div>
                             )}
                             {attendanceHistoryEntries.length === 0 && (
