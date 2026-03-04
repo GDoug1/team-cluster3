@@ -11,7 +11,7 @@ export default function Login() {
 
     try {
       const res = await fetch(
-        "http://localhost/team-cluster/backend/auth/login.php",
+        `${import.meta.env.VITE_API_BASE_URL ?? "http://localhost/team-cluster3/backend"}/auth/login.php`,
         {
           method: "POST",
           credentials: "include",
@@ -20,7 +20,14 @@ export default function Login() {
         }
       );
 
-      const data = await res.json();
+      const raw = await res.text();
+      let data = {};
+
+      try {
+        data = raw ? JSON.parse(raw) : {};
+      } catch {
+        data = { error: raw || `Request failed with status ${res.status}` };
+      }
 
       if (!res.ok) throw data;
 
@@ -40,7 +47,7 @@ export default function Login() {
 
       window.location.href = redirectPath;
     } catch (err) {
-      setError(err.error || "Login failed");
+      setError(err.error || err.details || "Login failed");
     }
   }
 

@@ -13,11 +13,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 include "../config/database.php";
 
 $data = json_decode(file_get_contents("php://input"), true);
+if (!is_array($data)) {
+    http_response_code(400);
+    echo json_encode(["error" => "Invalid JSON payload"]);
+    exit;
+}
 
 $fullname = trim($data['fullname'] ?? '');
 $email = trim($data['email'] ?? '');
 $password = $data['password'] ?? '';
-$role = $data['role'] ?? '';
+$role = strtolower(trim($data['role'] ?? ''));
 
 if (!$fullname || !$email || !$password || !$role) {
     http_response_code(400);
@@ -25,17 +30,27 @@ if (!$fullname || !$email || !$password || !$role) {
     exit;
 }
 
-if (!in_array($role, ["coach", "employee", "admin"])) {
+if (!in_array($role, ["coach", "employee", "admin"], true)) {
     http_response_code(400);
     echo json_encode(["error" => "Invalid role"]);
     exit;
 }
 
 $check = $conn->prepare("SELECT id FROM users WHERE email=?");
-$check->bind_param("s", $email);
-$check->execute();
-$check->store_result();
+if (!$check) {
+    http_response_code(500);
+    echo json_encode(["error" => "Unable to validate email", "details" => $conn->error]);
+    exit;
+}
 
+$check->bind_param("s", $email);
+if (!$check->execute()) {
+    http_response_code(500);
+    echo json_encode(["error" => "Unable to validate email", "details" => $check->error]);
+    exit;
+}
+
+$check->store_result();
 if ($check->num_rows > 0) {
     http_response_code(409);
     echo json_encode(["error" => "Email already exists"]);
@@ -48,7 +63,18 @@ $stmt = $conn->prepare(
     "INSERT INTO users (fullname, email, password, role)
      VALUES (?, ?, ?, ?)"
 );
+
+if (!$stmt) {
+    http_response_code(500);
+    echo json_encode(["error" => "Unable to create account", "details" => $conn->error]);
+    exit;
+}
+
 $stmt->bind_param("ssss", $fullname, $email, $hashed, $role);
-$stmt->execute();
+if (!$stmt->execute()) {
+    http_response_code(500);
+    echo json_encode(["error" => "Unable to create account", "details" => $stmt->error]);
+    exit;
+}
 
 echo json_encode(["success" => true]);

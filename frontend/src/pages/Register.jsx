@@ -20,7 +20,7 @@ export default function Register() {
 
     try {
       const res = await fetch(
-        "http://localhost/team-cluster/backend/auth/register.php",
+        `${import.meta.env.VITE_API_BASE_URL ?? "http://localhost/team-cluster3/backend"}/auth/register.php`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -28,13 +28,20 @@ export default function Register() {
         }
       );
 
-      const data = await res.json();
+      const raw = await res.text();
+      let data = {};
+
+      try {
+        data = raw ? JSON.parse(raw) : {};
+      } catch {
+        data = { error: raw || `Request failed with status ${res.status}` };
+      }
 
       if (!res.ok) throw data;
 
       window.location.href = "/login";
     } catch (err) {
-      setError(err.error || "Registration failed");
+      setError(err.error || err.details || "Registration failed");
     }
   }
 
